@@ -1,0 +1,13 @@
+.{
+    .name = .apica,
+    .version = "0.1.0",
+    .fingerprint = 0x3a2c9079d4cc7763,
+    .minimum_zig_version = "0.15.2",
+    .dependencies = .{},
+
+    .paths = .{
+        "build.zig",
+        "build.zig.zon",
+        "src",
+    },
+}

@@ -1,0 +1,5 @@
+.vscode
+build
+zig-gamedev
+.zig-cache
+zig-out
