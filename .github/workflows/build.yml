@@ -17,12 +17,17 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Install Zig
+        if: runner.os == 'Windows'
+        shell: powershell
         run: |
-          if [[ "$RUNNER_OS" == "Windows" ]]; then
-            curl -L https://ziglang.org/download/0.15.2/zig-windows-x86_64-0.15.2.zip -o zig.zip
-            powershell -Command "Expand-Archive zig.zip -DestinationPath C:\zig"
-            echo "::add-path::C:\zig\zig-windows-x86_64-0.15.2"
-          elif [[ "$RUNNER_OS" == "macOS" ]]; then
+          Invoke-WebRequest -Uri "https://ziglang.org/download/0.15.2/zig-windows-x86_64-0.15.2.zip" -OutFile "zig.zip"
+          Expand-Archive zig.zip -DestinationPath "C:\zig"
+          $env:PATH = "C:\zig\zig-windows-x86_64-0.15.2;" + $env:PATH
+
+      - name: Install Zig (macOS/Linux)
+        if: runner.os != 'Windows'
+        run: |
+          if [[ "$RUNNER_OS" == "macOS" ]]; then
             curl -L https://ziglang.org/download/0.15.2/zig-macos-x86_64-0.15.2.tar.xz -o zig.tar.xz
             tar -xf zig.tar.xz -C $HOME
             echo "$HOME/zig-macos-x86_64-0.15.2" >> $GITHUB_PATH
