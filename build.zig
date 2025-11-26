@@ -16,27 +16,43 @@ pub fn build(b: *std.Build) void {
     const os = target.result.os.tag;
     switch (os) {
         .linux => {
+            exe.addLibraryPath(b.path("/usr/lib/x86_64-linux-gnu"));
             exe.linkSystemLibrary("glfw");
             exe.linkSystemLibrary("vulkan");
+            exe.linkSystemLibrary("X11");
             exe.linkSystemLibrary("dl");
             exe.linkSystemLibrary("pthread");
-            exe.linkSystemLibrary("X11");
             exe.linkLibC();
         },
+
         .windows => {
+            const envMap = std.process.getEnvMap(std.heap.page_allocator) catch @panic("Allocation error");
+            const vulkan_sdk = envMap.get("VULKAN_SDK") orelse
+                @panic("Install Vulkan SDK and set VULKAN_SDK env var");
+
+            exe.addIncludePath(b.path(b.pathJoin(&.{ vulkan_sdk, "Include" })));
+            exe.addLibraryPath(b.path(b.pathJoin(&.{ vulkan_sdk, "Lib" })));
             exe.linkSystemLibrary("glfw3");
+
+            exe.addIncludePath(b.path("libs/glfw/include"));
+            exe.addLibraryPath(b.path("libs/glfw/lib"));
             exe.linkSystemLibrary("vulkan-1");
+
             exe.linkSystemLibrary("user32");
             exe.linkSystemLibrary("gdi32");
             exe.linkSystemLibrary("shell32");
         },
+
         .macos => {
+            exe.addIncludePath(b.path("/usr/local/include"));
+            exe.addLibraryPath(b.path("/usr/local/lib"));
             exe.linkSystemLibrary("glfw");
             exe.linkSystemLibrary("MoltenVK");
             exe.linkFramework("Cocoa");
             exe.linkFramework("QuartzCore");
             exe.linkLibC();
         },
+
         else => {},
     }
 
