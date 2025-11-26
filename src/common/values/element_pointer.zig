@@ -10,7 +10,7 @@ pub const ValueElementPointer = struct {
     }
 
     pub fn show(_: *const ValueElementPointer, end: u8) void {
-        std.debug.print("sp-pointer<>{c}", .{end});
+        std.debug.print("elt-pointer<>{c}", .{end});
     }
 
     pub fn get_pointer(self: *const ValueElementPointer) *Element {
@@ -19,6 +19,10 @@ pub const ValueElementPointer = struct {
 
     pub fn is_null(self: *const ValueElementPointer) bool {
         return self.pointer.get_value().is_null();
+    }
+
+    pub fn get_repr_type(self: *const ValueElementPointer) []const u8 {
+        return self.pointer.get_value().get_repr_type();
     }
 
     pub fn increment(self: *ValueElementPointer) ?val.Value {

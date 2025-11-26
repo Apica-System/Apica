@@ -25,6 +25,10 @@ pub const ValueChar = struct {
         return self.value == null;
     }
 
+    pub fn get_repr_type(_: *const ValueChar) []const u8 {
+        return "char";
+    }
+
     pub fn get_value(self: *const ValueChar) ?u32 {
         return self.value;
     }
@@ -53,7 +57,7 @@ pub const ValueChar = struct {
                 val.ValueKind.Bool => return val.Value{ .Bool = val.ValueBool.init_with(value != 0) },
                 val.ValueKind.String => {
                     const buffer: [4]u8 = @bitCast(value);
-                    return val.Value{ .String = val.ValueString.init_with(&buffer) };
+                    return val.Value{ .String = val.ValueString.init_with(&buffer, false) };
                 },
 
                 else => return null,
@@ -71,14 +75,20 @@ pub const ValueChar = struct {
     pub fn auto_convert(self: *const ValueChar, to: val.ValueKind) ?val.Value {
         if (self.value) |value| {
             switch (to) {
+                val.ValueKind.U8 => return val.Value{ .U8 = val.ValueU8.init_with(@truncate(value)) },
+                val.ValueKind.U16 => return val.Value{ .U16 = val.ValueU16.init_with(@truncate(value)) },
                 val.ValueKind.U32 => return val.Value{ .U32 = val.ValueU32.init_with(value) },
+                val.ValueKind.U64 => return val.Value{ .U64 = val.ValueU64.init_with(value) },
                 val.ValueKind.Char => return val.Value{ .Char = self.copy() },
 
                 else => return null,
             }
         } else {
             switch (to) {
+                val.ValueKind.U8 => return val.Value{ .U8 = val.ValueU8.init_empty() },
+                val.ValueKind.U16 => return val.Value{ .U16 = val.ValueU16.init_empty() },
                 val.ValueKind.U32 => return val.Value{ .U32 = val.ValueU32.init_empty() },
+                val.ValueKind.U64 => return val.Value{ .U64 = val.ValueU64.init_empty() },
                 val.ValueKind.Char => return val.Value{ .Char = ValueChar.init_empty() },
 
                 else => return null,

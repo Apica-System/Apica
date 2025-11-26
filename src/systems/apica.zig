@@ -2,6 +2,7 @@ const std = @import("std");
 const ApicaRight = @import("../utils/enums.zig").ApicaRight;
 const ApicaMode = @import("../utils/enums.zig").ApicaMode;
 const bytecode = @import("../common/bytecodes.zig");
+const version = @import("../utils/version.zig");
 
 const BytecodeReaderSystem = @import("reader.zig").BytecodeReaderSystem;
 const LoggerSystem = @import("logger.zig").LoggerSystem;
@@ -140,5 +141,13 @@ pub const ApicaSystem = struct {
 
             ApicaMode.SpecialQuit => {},
         }
+    }
+
+    pub fn get_apica_version_major(_: *ApicaSystem) u64 {
+        return version.VERSION_MAJOR;
+    }
+
+    pub fn get_apica_version_minor(_: *ApicaSystem) u64 {
+        return version.VERSION_MINOR;
     }
 };

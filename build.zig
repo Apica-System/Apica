@@ -13,43 +13,32 @@ pub fn build(b: *std.Build) void {
         }),
     });
 
-    exe.addIncludePath(b.path("libs/glfw3/include"));
-    exe.addIncludePath(b.path("libs/glad/include"));
-    exe.root_module.addCSourceFile(.{ .file = b.path("src/glad.c"), .flags = &.{"-std=c99"} });
-
-    switch (target.result.os.tag) {
-        .windows => {
-            exe.addLibraryPath(b.path("libs/glfw3/lib"));
-            exe.linkSystemLibrary("glfw3");
-            exe.linkSystemLibrary("opengl32");
-            exe.linkSystemLibrary("gdi32");
-            exe.linkSystemLibrary("user32");
-            exe.linkSystemLibrary("kernel32");
-        },
+    const os = target.result.os.tag;
+    switch (os) {
         .linux => {
             exe.linkSystemLibrary("glfw");
-            exe.linkSystemLibrary("GL");
-            exe.linkSystemLibrary("X11");
-            exe.linkSystemLibrary("pthread");
+            exe.linkSystemLibrary("vulkan");
             exe.linkSystemLibrary("dl");
-            exe.linkSystemLibrary("m");
+            exe.linkSystemLibrary("pthread");
+            exe.linkSystemLibrary("X11");
+            exe.linkLibC();
+        },
+        .windows => {
+            exe.linkSystemLibrary("glfw3");
+            exe.linkSystemLibrary("vulkan-1");
+            exe.linkSystemLibrary("user32");
+            exe.linkSystemLibrary("gdi32");
+            exe.linkSystemLibrary("shell32");
         },
         .macos => {
-            exe.linkFramework("Cocoa");
-            exe.linkFramework("IOKit");
-            exe.linkFramework("CoreVideo");
             exe.linkSystemLibrary("glfw");
-            exe.linkFramework("OpenGL");
+            exe.linkSystemLibrary("MoltenVK");
+            exe.linkFramework("Cocoa");
+            exe.linkFramework("QuartzCore");
+            exe.linkLibC();
         },
         else => {},
     }
-
-    //const zglfw = b.dependency("zglfw", .{});
-    //exe.root_module.addImport("zglfw", zglfw.module("root"));
-
-    //if (target.result.os.tag != .emscripten) {
-    //    exe.linkLibrary(zglfw.artifact("glfw"));
-    //}
 
     b.installArtifact(exe);
 

@@ -62,9 +62,10 @@ pub const LoggerSystem = struct {
             file.writeAll(start) catch {};
 
             for (parameters.items) |param| {
-                const converted = param.convert(val.ValueKind.String).get_value().String;
+                const converted = param.check_convert(val.ValueKind.String);
+                defer converted.delete();
 
-                if (converted.get_value()) |string| {
+                if (converted.get_value().String.get_value()) |string| {
                     var length: usize = 0;
                     while (length < string.len and string[length] != 0) : (length += 1) {}
 

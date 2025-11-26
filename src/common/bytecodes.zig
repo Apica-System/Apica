@@ -17,6 +17,11 @@ pub const ApicaBytecode = enum(u64) {
     LessThan = 0x0000000F,
     Equals = 0x00000010,
     Not = 0x00000011,
+    LessEquals = 0x00000012,
+    GreaterThan = 0x00000013,
+    GreaterEquals = 0x00000014,
+    Different = 0x00000015,
+    Convert = 0x00000016,
     Break = 0x00000100,
     Continue = 0x00000101,
     BlankReturn = 0x00000102,
@@ -29,7 +34,7 @@ pub const ApicaBytecode = enum(u64) {
 
 pub const ApicaTypeBytecode = enum(u64) {
     Null = 0x00000000,
-
+    Any = 0x00000001,
     I8 = 0x00000002,
     I16 = 0x00000003,
     I32 = 0x00000004,
@@ -66,4 +71,6 @@ pub const ApicaBuiltinFuncCallBytecode = enum(u64) {
     LoadApp = 0x00000009,
     SetTitle = 0x0000000A,
     SetResizable = 0x0000000B,
+    GetApicaVersionMajor = 0x0000000C,
+    GetApicaVersionMinor = 0x0000000D,
 };

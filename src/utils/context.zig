@@ -3,7 +3,6 @@ const Element = @import("../common/element.zig").Element;
 
 pub const Context = struct {
     data: std.StringHashMap(Element),
-    inner_allocator: std.heap.DebugAllocator(.{}),
     parent: ?*Context,
 
     pub fn init(parent: ?*Context) ?*Context {
@@ -13,11 +12,10 @@ pub const Context = struct {
 
         context.* = Context{
             .data = undefined,
-            .inner_allocator = std.heap.DebugAllocator(.{}){},
             .parent = parent,
         };
 
-        context.data = std.StringHashMap(Element).init(context.inner_allocator.allocator());
+        context.data = std.StringHashMap(Element).init(std.heap.smp_allocator);
 
         return context;
     }
@@ -27,8 +25,12 @@ pub const Context = struct {
             parent.destroy();
         }
 
+        var iterator = self.data.valueIterator();
+        while (iterator.next()) |element| {
+            element.delete();
+        }
+
         self.data.deinit();
-        _ = self.inner_allocator.deinit();
         std.heap.page_allocator.destroy(self);
     }
 

@@ -86,8 +86,12 @@ pub const BytecodeReaderSystem = struct {
             bytecode.ApicaBytecode.ConstDecl => return self.read_const_decl(input_file),
             bytecode.ApicaBytecode.Increment => return self.read_increment(input_file),
             bytecode.ApicaBytecode.Decrement => return self.read_decrement(input_file),
+            bytecode.ApicaBytecode.Break => return self.read_break(),
+            bytecode.ApicaBytecode.Continue => return self.read_continue(),
+            bytecode.ApicaBytecode.QuestionOperation => return self.read_question_operation(input_file),
             bytecode.ApicaBytecode.If => return self.read_if(input_file),
             bytecode.ApicaBytecode.IfElse => return self.read_if_else(input_file),
+            bytecode.ApicaBytecode.While => return self.read_while(input_file),
 
             else => {
                 self.apica.get_logger().__logn_error(&.{ "An unexpected Apica Bytecode was found -> ", @tagName(code) });
@@ -142,42 +146,45 @@ pub const BytecodeReaderSystem = struct {
     }
 
     pub fn read_literal(self: *BytecodeReaderSystem, input_file: std.fs.File) ?*nd.Node {
-        const type_code = read.read_type_bytecode(input_file);
-        if (type_code) |r_type_code| {
-            switch (r_type_code) {
-                bytecode.ApicaTypeBytecode.Null => {
-                    const result = nd.Node.allocate_new(self.apica.get_allocator()) orelse return self.log_allocate_error();
-                    result.* = nd.Node{ .Literal = nd.NodeLiteral.init(val.Value{
-                        .Null = val.ValueNull.init_empty(),
-                    }) };
-                    return result;
-                },
+        const type_code = read.read_type_bytecode(input_file) orelse return self.log_unknown_type_bytecode();
+        const result = nd.Node.allocate_new(self.apica.get_allocator()) orelse return self.log_allocate_error();
 
-                bytecode.ApicaTypeBytecode.U32 => {
-                    const integer = read.read_u32(input_file) orelse return null;
-                    const result = nd.Node.allocate_new(self.apica.get_allocator()) orelse return null;
-                    result.* = nd.Node{
-                        .Literal = nd.NodeLiteral.init(val.Value{ .U32 = val.ValueU32.init_with(integer) }),
-                    };
-                    return result;
-                },
+        switch (type_code) {
+            bytecode.ApicaTypeBytecode.Null => {
+                result.* = nd.Node{ .Literal = nd.NodeLiteral.init(val.Value{
+                    .Null = val.ValueNull.init_empty(),
+                }) };
+                return result;
+            },
 
-                bytecode.ApicaTypeBytecode.String => {
-                    const string = read.read_string(input_file, self.apica.get_allocator()) orelse return self.log_allocate_error();
-                    const result = nd.Node.allocate_new(self.apica.get_allocator()) orelse return null;
-                    result.* = nd.Node{
-                        .Literal = nd.NodeLiteral.init(val.Value{ .String = val.ValueString.init_with(string) }),
-                    };
-                    return result;
-                },
+            bytecode.ApicaTypeBytecode.U8 => {
+                const integer = read.read_u8(input_file) orelse return null;
+                result.* = nd.Node{
+                    .Literal = nd.NodeLiteral.init(val.Value{ .U8 = val.ValueU8.init_with(integer) }),
+                };
+                return result;
+            },
 
-                else => {
-                    self.apica.get_logger().__logn_error(&.{ "An unexpected Apica Type Bytecode was found -> ", @tagName(r_type_code) });
-                    return null;
-                },
-            }
-        } else {
-            return self.log_unknown_type_bytecode();
+            bytecode.ApicaTypeBytecode.U32 => {
+                const integer = read.read_u32(input_file) orelse return null;
+                result.* = nd.Node{
+                    .Literal = nd.NodeLiteral.init(val.Value{ .U32 = val.ValueU32.init_with(integer) }),
+                };
+                return result;
+            },
+
+            bytecode.ApicaTypeBytecode.String => {
+                const string = read.read_string(input_file, self.apica.get_allocator()) orelse return self.log_allocate_error();
+                result.* = nd.Node{
+                    .Literal = nd.NodeLiteral.init(val.Value{ .String = val.ValueString.init_with(string, false) }),
+                };
+                return result;
+            },
+
+            else => {
+                self.apica.get_logger().__logn_error(&.{ "An unexpected Apica Type Bytecode was found -> ", @tagName(type_code) });
+                return null;
+            },
         }
     }
 
@@ -238,6 +245,7 @@ pub const BytecodeReaderSystem = struct {
         result.* = nd.Node{
             .ConstDecl = nd.NodeConstDecl.init(name, c_type, expression),
         };
+
         return result;
     }
 
@@ -259,6 +267,22 @@ pub const BytecodeReaderSystem = struct {
         const result = nd.Node.allocate_new(self.apica.get_allocator()) orelse return self.log_allocate_error();
         result.* = nd.Node{
             .Decrement = nd.NodeDecrement.init(operand),
+        };
+        return result;
+    }
+
+    pub fn read_break(self: *BytecodeReaderSystem) ?*nd.Node {
+        const result = nd.Node.allocate_new(self.apica.get_allocator()) orelse return self.log_allocate_error();
+        result.* = nd.Node{
+            .Break = nd.NodeBreak.init(),
+        };
+        return result;
+    }
+
+    pub fn read_continue(self: *BytecodeReaderSystem) ?*nd.Node {
+        const result = nd.Node.allocate_new(self.apica.get_allocator()) orelse return self.log_allocate_error();
+        result.* = nd.Node{
+            .Continue = nd.NodeContinue.init(),
         };
         return result;
     }
@@ -307,6 +331,20 @@ pub const BytecodeReaderSystem = struct {
         const result = nd.Node.allocate_new(self.apica.get_allocator()) orelse return self.log_allocate_error();
         result.* = nd.Node{
             .IfElse = nd.NodeIfElse.init(condition, if_body, else_body),
+        };
+        return result;
+    }
+
+    pub fn read_while(self: *BytecodeReaderSystem, input_file: std.fs.File) ?*nd.Node {
+        const cnd_bytecode = read.read_bytecode(input_file) orelse return self.log_unknown_bytecode();
+        const condition = self.read_node(input_file, cnd_bytecode) orelse return null;
+
+        const body_bytecode = read.read_bytecode(input_file) orelse return self.log_unknown_bytecode();
+        const body = self.read_node(input_file, body_bytecode) orelse return null;
+
+        const result = nd.Node.allocate_new(self.apica.get_allocator()) orelse return self.log_allocate_error();
+        result.* = nd.Node{
+            .While = nd.NodeWhile.init(condition, body),
         };
         return result;
     }

@@ -20,6 +20,10 @@ pub const ValueBool = struct {
         return self.value == null;
     }
 
+    pub fn get_repr_type(_: *const ValueBool) []const u8 {
+        return "bool";
+    }
+
     pub fn get_value(self: *const ValueBool) ?bool {
         return self.value;
     }
@@ -32,7 +36,7 @@ pub const ValueBool = struct {
         if (self.value) |value| {
             switch (to) {
                 val.ValueKind.Char => return val.Value{ .Char = val.ValueChar.init_with(if (value) 1 else 0) },
-                val.ValueKind.String => return val.Value{ .String = val.ValueString.init_with(if (value) "true" else "false") },
+                val.ValueKind.String => return val.Value{ .String = val.ValueString.init_with(if (value) "true" else "false", false) },
 
                 else => return null,
             }
@@ -49,14 +53,20 @@ pub const ValueBool = struct {
     pub fn auto_convert(self: *const ValueBool, to: val.ValueKind) ?val.Value {
         if (self.value) |value| {
             switch (to) {
+                val.ValueKind.U8 => return val.Value{ .U8 = val.ValueU8.init_with(if (value) 1 else 0) },
+                val.ValueKind.U16 => return val.Value{ .U16 = val.ValueU16.init_with(if (value) 1 else 0) },
                 val.ValueKind.U32 => return val.Value{ .U32 = val.ValueU32.init_with(if (value) 1 else 0) },
+                val.ValueKind.U64 => return val.Value{ .U64 = val.ValueU64.init_with(if (value) 1 else 0) },
                 val.ValueKind.Bool => return val.Value{ .Bool = self.copy() },
 
                 else => return null,
             }
         } else {
             switch (to) {
+                val.ValueKind.U8 => return val.Value{ .U8 = val.ValueU8.init_empty() },
+                val.ValueKind.U16 => return val.Value{ .U16 = val.ValueU16.init_empty() },
                 val.ValueKind.U32 => return val.Value{ .U32 = val.ValueU32.init_empty() },
+                val.ValueKind.U64 => return val.Value{ .U64 = val.ValueU64.init_empty() },
                 val.ValueKind.Bool => return val.Value{ .Bool = ValueBool.init_empty() },
 
                 else => return null,

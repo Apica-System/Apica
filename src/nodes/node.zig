@@ -13,6 +13,9 @@ pub const NodeDecrement = @import("decrement.zig").NodeDecrement;
 pub const NodeQuestionOperation = @import("question_operation.zig").NodeQuestionOperation;
 pub const NodeIf = @import("if.zig").NodeIf;
 pub const NodeIfElse = @import("if_else.zig").NodeIfElse;
+pub const NodeWhile = @import("while.zig").NodeWhile;
+pub const NodeBreak = @import("break.zig").NodeBreak;
+pub const NodeContinue = @import("continue.zig").NodeContinue;
 
 pub const NodeKind = enum(u8) {
     Compound,
@@ -29,6 +32,10 @@ pub const NodeKind = enum(u8) {
 
     If,
     IfElse,
+    While,
+
+    Break,
+    Continue,
 };
 
 pub const Node = union(NodeKind) {
@@ -44,6 +51,9 @@ pub const Node = union(NodeKind) {
     QuestionOperation: NodeQuestionOperation,
     If: NodeIf,
     IfElse: NodeIfElse,
+    While: NodeWhile,
+    Break: NodeBreak,
+    Continue: NodeContinue,
 
     pub fn get_kind(self: *const Node) NodeKind {
         switch (self.*) {
@@ -59,6 +69,9 @@ pub const Node = union(NodeKind) {
             .QuestionOperation => return NodeKind.QuestionOperation,
             .If => return NodeKind.If,
             .IfElse => return NodeKind.IfElse,
+            .While => return NodeKind.While,
+            .Break => return NodeKind.Break,
+            .Continue => return NodeKind.Continue,
         }
     }
 
