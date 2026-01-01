@@ -1,0 +1,10 @@
+[package]
+name = "Apica"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+apica_common = { git = "https://github.com/Apica-System/common.git" }
+chrono = "0.4.42"
+bitflags = "2.10.0"
+winit = "0.30.12"
