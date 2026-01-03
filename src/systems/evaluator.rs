@@ -196,6 +196,28 @@ impl EvaluatorSystem {
                     Element::create_null()
                 }
             },
+
+            ApicaBuiltinFunctionBytecode::SetResizable => {
+                if !window.set_resizable(parameters) {
+                    Element::create_error(Value::Error(ValueError::init_with(
+                        String::from("ArgumentError"),
+                        Some(String::from("Incorrect arguments passed to the function `SetResizable`"))
+                    )))
+                } else {
+                    Element::create_null()
+                }
+            },
+
+            ApicaBuiltinFunctionBytecode::IsKeyReleased => {
+                if let Some(state) = inputs.is_key_released(parameters) {
+                    Element::init(ElementModifier::None, Value::Bool(ValueBool::init_with(state)))
+                } else {
+                    Element::create_error(Value::Error(ValueError::init_with(
+                        String::from("ArgumentError"),
+                        Some(String::from("Incorrect arguments passed to the function `IsKeyJustPressed`"))
+                    )))
+                }
+            },
             
             ApicaBuiltinFunctionBytecode::IsKeyJustPressed => {
                 if let Some(state) = inputs.is_key_just_pressed(parameters) {

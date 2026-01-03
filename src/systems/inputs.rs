@@ -52,7 +52,6 @@ impl InputsSystem {
     }
 
     pub fn handle_key_event(&mut self, key: &KeyEvent) {
-        println!("Key {:?}: {:?}", key.text, key.physical_key.to_scancode());
         if let Some(state) = self.keys.get_mut(&key.physical_key) {
             if key.state.is_pressed() {
                 *state = if *state == KeyState::JustPressed { KeyState::Pressed } else { KeyState::JustPressed };
@@ -84,6 +83,25 @@ impl InputsSystem {
         }
 
         false
+    }
+
+    pub fn is_key_released(&self, parameters: Vec<Element>) -> Option<bool> {
+        if parameters.is_empty() {
+            return None;
+        }
+
+        let key = parameters.first().unwrap().auto_convert(ApicaTypeBytecode::U32);
+        if key.is_error_or_controller() {
+            return None;
+        }
+
+        if let Value::U32(scancode) = key.get_value() {
+            if let Some(code) = scancode.get_value() {
+                return Some(self.system_is_key_released(&PhysicalKey::from_scancode(code)));
+            }
+        }
+
+        None
     }
 
     pub fn is_key_just_pressed(&self, parameters: Vec<Element>) -> Option<bool> {

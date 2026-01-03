@@ -1,6 +1,7 @@
 ﻿use std::collections::HashMap;
 use std::fs::File;
 use apica_common::bytecodes::{ApicaBytecode, ApicaEntrypointBytecode, ApicaTypeBytecode};
+use apica_common::values::bool::ValueBool;
 use apica_common::values::null::ValueNull;
 use apica_common::values::string::ValueString;
 use apica_common::values::u32::ValueU32;
@@ -182,6 +183,17 @@ impl BytecodeReaderSystem {
 
                 Some(Node::Literal(NodeLiteral::init(
                     Value::U32(ValueU32::init_with(integer))
+                )))
+            },
+
+            ApicaTypeBytecode::Bool => {
+                let boolean = match read::read_u8(input_file) {
+                    Some(value) => value != 0,
+                    None => return None,
+                };
+
+                Some(Node::Literal(NodeLiteral::init(
+                    Value::Bool(ValueBool::init_with(boolean))
                 )))
             },
 

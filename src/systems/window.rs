@@ -34,4 +34,22 @@ impl WindowSystem {
 
         true
     }
+
+    pub fn set_resizable(&self, parameters: Vec<Element>) -> bool {
+        if parameters.is_empty() {
+            return false;
+        }
+
+        let resizable_element = parameters.first().unwrap().auto_convert(ApicaTypeBytecode::Bool);
+        if let Value::Bool(resizable) = resizable_element.get_value() {
+            if let Some(resize) = resizable.get_value() {
+                if let Some(window) = &self.window {
+                    window.set_resizable(resize);
+                    return true;
+                }
+            }
+        }
+
+        false
+    }
 }
