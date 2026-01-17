@@ -16,6 +16,7 @@ use crate::nodes::blank_return::NodeBlankReturn;
 use crate::nodes::builtin_func_call::NodeBuiltinFuncCall;
 use crate::nodes::compound::NodeCompound;
 use crate::nodes::const_decl::NodeConstDecl;
+use crate::nodes::convert::NodeConvert;
 use crate::nodes::decrement::NodeDecrement;
 use crate::nodes::global_scope::NodeGlobalScope;
 use crate::nodes::if_else::NodeIfElse;
@@ -99,6 +100,7 @@ impl EvaluatorSystem {
             Node::Increment(increment) => self.evaluate_increment(increment, mode, logger, rights, window, inputs),
             Node::Decrement(decrement) => self.evaluate_decrement(decrement, mode, logger, rights, window, inputs),
             Node::Not(not) => self.evaluate_not(not, mode, logger, rights, window, inputs),
+            Node::Convert(convert) => self.evaluate_convert(convert, mode, logger, rights, window, inputs),
             Node::TernaryOp(ternary) => self.evaluate_ternary_operation(ternary, mode, logger, rights, window, inputs),
             Node::If(_if) => self.evaluate_if(_if, mode, logger, rights, window, inputs),
             Node::IfElse(if_else) => self.evaluate_if_else(if_else, mode, logger, rights, window, inputs),
@@ -249,7 +251,7 @@ impl EvaluatorSystem {
     }
 
     fn evaluate_literal(&mut self, literal: &NodeLiteral) -> Element {
-        let value = literal.get_value().auto_convert(literal.get_value().get_kind()).unwrap();
+        let value = literal.get_value().clone();
         Element::init(ElementModifier::None, value)
     }
 
@@ -262,7 +264,7 @@ impl EvaluatorSystem {
     fn evaluate_var_const_call(&mut self, vc_call: &NodeVarConstCall, mode: EvaluatorModifier) -> Element {
         if let Some(vc_element) = self.context.get_element(vc_call.get_name(), mode.contains(EvaluatorModifier::Global)) {
             if mode.contains(EvaluatorModifier::CopyCall) {
-                vc_element.auto_convert(vc_element.get_value().get_kind())
+                Element::init(ElementModifier::None, vc_element.get_value().clone())
             } else {
                 Element::init(vc_element.get_modifier(), Value::Pointer(
                     ValuePointer::init_with(vc_call.get_name().clone(), mode.contains(EvaluatorModifier::Global)),
@@ -406,6 +408,17 @@ impl EvaluatorSystem {
         } else {
             operand.not()
         }
+    }
+    
+    fn evaluate_convert(&mut self, convert: &NodeConvert, mode: EvaluatorModifier, 
+                        logger: &mut LoggerSystem, rights: &mut RightSystem, window: &mut WindowSystem, 
+                        inputs: &mut InputsSystem) -> Element {
+        let left = self.evaluate_node(convert.get_left(), mode | EvaluatorModifier::CopyCall, logger, rights, window, inputs);
+        if left.is_error_or_controller() {
+            return left;
+        }
+
+        left.convert(convert.get_right())
     }
 
     fn evaluate_ternary_operation(&mut self, ternary: &NodeTernaryOp, mode: EvaluatorModifier,

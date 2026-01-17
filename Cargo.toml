@@ -8,3 +8,4 @@ apica_common = { git = "https://github.com/Apica-System/common.git" }
 chrono = "0.4.42"
 bitflags = "2.10.0"
 winit = "0.30.12"
+wgpu = "28.0.0"

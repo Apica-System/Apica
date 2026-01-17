@@ -1,4 +1,5 @@
 ﻿use apica_common::bytecodes::ApicaEntrypointBytecode;
+use apica_common::values::value::Value;
 use winit::application::ApplicationHandler;
 use winit::event::WindowEvent;
 use winit::event_loop::ActiveEventLoop;
@@ -48,11 +49,23 @@ impl ApicaSystem {
         self.evaluator.clear_data();
         self.logger.create_file_for(app_name);
         self.reader.read_app(app_name, &mut self.logger);
+
+        let title = if let Some(value) = self.reader.get_data("title") && let Value::String(title) = value {
+            title.get_value().as_ref().unwrap()
+        } else {
+            "???"
+        };
+        self.window.system_set_title(title);
     }
 
     pub fn update_system(&mut self) {
         match self.rights.get_mode() {
             ApicaMode::SpecialQuit => {},
+
+            ApicaMode::SpecialInit => {
+                self.rights.set_mode(ApicaMode::Init);
+                self.load_app(APICA_MAIN_MENU)
+            },
 
             ApicaMode::Init => {
                 if let Some(init_node) = self.reader.get_entry_node(ApicaEntrypointBytecode::Init) {

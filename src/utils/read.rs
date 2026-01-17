@@ -1,6 +1,6 @@
 ﻿use std::fs::File;
 use std::io::Read;
-use apica_common::bytecodes::{ApicaBuiltinFunctionBytecode, ApicaBytecode, ApicaEntrypointBytecode, ApicaTypeBytecode};
+use apica_common::bytecodes::{ApicaBuiltinFunctionBytecode, ApicaBytecode, ApicaEntrypointBytecode, ApicaSpecificationBytecode, ApicaTypeBytecode};
 
 pub fn read_u8(file: &mut File) -> Option<u8> {
     let mut buffer = [0u8; 1];
@@ -91,6 +91,18 @@ pub fn read_entry_bytecode(file: &mut File) -> Option<ApicaEntrypointBytecode> {
 pub fn read_builtin_func_bytecode(file: &mut File) -> Option<ApicaBuiltinFunctionBytecode> {
     if let Some(word) = read_u64(file) {
         if let Ok(bytecode) = ApicaBuiltinFunctionBytecode::try_from(word) {
+            Some(bytecode)
+        } else {
+            None
+        }
+    } else {
+        None
+    }
+}
+
+pub fn read_specification_bytecode(file: &mut File) -> Option<ApicaSpecificationBytecode> {
+    if let Some(word) = read_u64(file) {
+        if let Ok(bytecode) = ApicaSpecificationBytecode::try_from(word) {
             Some(bytecode)
         } else {
             None

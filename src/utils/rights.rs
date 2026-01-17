@@ -14,7 +14,7 @@ bitflags! {
 
 #[derive(PartialEq)]
 pub enum ApicaMode {
-    SpecialQuit,
+    SpecialQuit, SpecialInit,
 
     Init, Update, Quit
 }

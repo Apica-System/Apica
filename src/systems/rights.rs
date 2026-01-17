@@ -7,7 +7,7 @@ pub struct RightSystem {
 
 impl RightSystem {
     pub fn init() -> RightSystem {
-        RightSystem { mode: ApicaMode::Init, right: ApicaRight::MainMenu }
+        RightSystem { mode: ApicaMode::SpecialInit, right: ApicaRight::MainMenu }
     }
     
     pub fn get_mode(&self) -> &ApicaMode {

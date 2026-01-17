@@ -7,6 +7,7 @@ use crate::nodes::blank_return::NodeBlankReturn;
 use crate::nodes::builtin_func_call::NodeBuiltinFuncCall;
 use crate::nodes::compound::NodeCompound;
 use crate::nodes::const_decl::NodeConstDecl;
+use crate::nodes::convert::NodeConvert;
 use crate::nodes::decrement::NodeDecrement;
 use crate::nodes::global_scope::NodeGlobalScope;
 use crate::nodes::if_else::NodeIfElse;
@@ -31,6 +32,7 @@ pub enum Node {
     Decrement(Box<NodeDecrement>),
     Not(Box<NodeNot>),
     TernaryOp(Box<NodeTernaryOp>),
+    Convert(Box<NodeConvert>),
 
     If(Box<NodeIf>),
     IfElse(Box<NodeIfElse>),

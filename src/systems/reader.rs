@@ -1,6 +1,6 @@
 ﻿use std::collections::HashMap;
 use std::fs::File;
-use apica_common::bytecodes::{ApicaBytecode, ApicaEntrypointBytecode, ApicaTypeBytecode};
+use apica_common::bytecodes::{ApicaBytecode, ApicaEntrypointBytecode, ApicaSpecificationBytecode, ApicaTypeBytecode};
 use apica_common::values::bool::ValueBool;
 use apica_common::values::null::ValueNull;
 use apica_common::values::string::ValueString;
@@ -16,6 +16,7 @@ use crate::nodes::blank_return::NodeBlankReturn;
 use crate::nodes::builtin_func_call::NodeBuiltinFuncCall;
 use crate::nodes::compound::NodeCompound;
 use crate::nodes::const_decl::NodeConstDecl;
+use crate::nodes::convert::NodeConvert;
 use crate::nodes::decrement::NodeDecrement;
 use crate::nodes::global_scope::NodeGlobalScope;
 use crate::nodes::if_else::NodeIfElse;
@@ -31,25 +32,37 @@ use crate::utils::read;
 
 pub struct BytecodeReaderSystem {
     bytecode_nodes: HashMap<u64, NodeCompound>,
+    specifications: HashMap<&'static str, Value>,
 }
 
 impl BytecodeReaderSystem {
     pub fn init() -> BytecodeReaderSystem {
-        BytecodeReaderSystem { bytecode_nodes: HashMap::new() }
+        BytecodeReaderSystem { bytecode_nodes: HashMap::new(), specifications: HashMap::new() }
     }
 
-    pub fn clear_nodes(&mut self) {
+    pub fn clear(&mut self) {
         self.bytecode_nodes.clear();
+        self.specifications.clear();
     }
 
     pub fn get_entry_node(&self, entry: ApicaEntrypointBytecode) -> Option<&NodeCompound> {
         self.bytecode_nodes.get(&(entry as u64))
     }
 
+    pub fn get_data(&self, key: &str) -> Option<&Value> {
+        self.specifications.get(key)
+    }
+
     pub fn read_app(&mut self, app_name: &str, logger: &mut LoggerSystem) {
-        self.clear_nodes();
+        self.clear();
         let filepath = format!("apps/{app_name}/{app_name}.apb");
         if let Ok(mut input_file) = File::open(filepath) {
+            let mut spec_code = read::read_specification_bytecode(&mut input_file);
+            while let Some(spec_bytecode) = &spec_code && *spec_bytecode != ApicaSpecificationBytecode::EndOfSpecification {
+                self.read_specification(&mut input_file, *spec_bytecode, logger);
+                spec_code = read::read_specification_bytecode(&mut input_file);
+            }
+
             let mut code = read::read_bytecode(&mut input_file);
             while let Some(bytecode) = &code && *bytecode != ApicaBytecode::EndOfFile {
                 if *bytecode == ApicaBytecode::Entrypoint {
@@ -99,6 +112,7 @@ impl BytecodeReaderSystem {
             ApicaBytecode::Increment => self.read_increment(input_file, logger),
             ApicaBytecode::Decrement => self.read_decrement(input_file, logger),
             ApicaBytecode::Not => self.read_not(input_file, logger),
+            ApicaBytecode::As => self.read_convert(input_file, logger),
             ApicaBytecode::Break => Some(self.read_break()),
             ApicaBytecode::Continue => Some(self.read_continue()),
             ApicaBytecode::BlankReturn => Some(self.read_blank_return()),
@@ -354,6 +368,28 @@ impl BytecodeReaderSystem {
         Some(Node::Not(Box::new(NodeNot::init(operand))))
     }
 
+    fn read_convert(&mut self, input_file: &mut File, logger: &mut LoggerSystem) -> Option<Node> {
+        let left_bytecode = match read::read_bytecode(input_file) {
+            Some(bytecode) => bytecode,
+            None => return None,
+        };
+
+        let left = match self.read_node(input_file, left_bytecode, logger) {
+            Some(node) => node,
+            None => return None,
+        };
+
+        let right_bytecode = match read::read_type_bytecode(input_file) {
+            Some(bytecode) => bytecode,
+            None => {
+                logger.system_logn_error(String::from("An unknown Apica Type was found for `convert`"));
+                return None;
+            },
+        };
+
+        Some(Node::Convert(Box::new(NodeConvert::init(left, right_bytecode))))
+    }
+
     fn read_break(&self) -> Node {
         Node::Break(NodeBreak::init())
     }
@@ -510,5 +546,42 @@ impl BytecodeReaderSystem {
         };
 
         Some(Node::While(Box::new(NodeWhile::init(condition, body))))
+    }
+
+    fn read_specification(&mut self, input_file: &mut File, code: ApicaSpecificationBytecode, logger: &mut LoggerSystem) {
+        match code {
+            ApicaSpecificationBytecode::EndOfSpecification => {},
+
+            ApicaSpecificationBytecode::Title => self.read_data_string(input_file, logger, "title"),
+            ApicaSpecificationBytecode::Id => self.read_data_string(input_file, logger, "id"),
+            ApicaSpecificationBytecode::Version => self.read_data_string(input_file, logger, "version"),
+            ApicaSpecificationBytecode::LoggerActivation => self.read_data_bool(input_file, logger, "logger"),
+            ApicaSpecificationBytecode::WindowWidth => self.read_data_u32(input_file, logger, "window_width"),
+            ApicaSpecificationBytecode::WindowHeight => self.read_data_u32(input_file, logger, "window_height"),
+        }
+    }
+
+    fn read_data_string(&mut self, input_file: &mut File, logger: &mut LoggerSystem, name: &'static str) {
+        if let Some(string_value) = read::read_string(input_file) {
+            self.specifications.insert(name, Value::String(ValueString::init_with(string_value)));
+        } else {
+            logger.system_logn_error(format!("Failed to read string data -> `{name}`"));
+        }
+    }
+
+    fn read_data_bool(&mut self, input_file: &mut File, logger: &mut LoggerSystem, name: &'static str) {
+        if let Some(bool_value) = read::read_u8(input_file) {
+            self.specifications.insert(name, Value::Bool(ValueBool::init_with(bool_value != 0)));
+        } else {
+            logger.system_logn_error(format!("Failed to read bool data -> `{name}`"));
+        }
+    }
+
+    fn read_data_u32(&mut self, input_file: &mut File, logger: &mut LoggerSystem, name: &'static str) {
+        if let Some(u32_value) = read::read_u32(input_file) {
+            self.specifications.insert(name, Value::U32(ValueU32::init_with(u32_value)));
+        } else {
+            logger.system_logn_error(format!("Failed to read u32 data -> `{name}`"));
+        }
     }
 }
