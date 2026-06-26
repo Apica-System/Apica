@@ -100,9 +100,9 @@ jobs:
       - name: Build and Install SDL3 Suite (Linux Statique)
         if: runner.os == 'Linux'
         run: |
-          # SDL3 Core
+          # SDL3 Core (Ajout de -DSDL_X11_XTEST=OFF)
           git clone --depth 1 https://github.com/libsdl-org/SDL.git -b main
-          cmake -S SDL -B build_sdl -DCMAKE_BUILD_TYPE=Release -DSDL_SHARED=OFF -DSDL_STATIC=ON
+          cmake -S SDL -B build_sdl -DCMAKE_BUILD_TYPE=Release -DSDL_SHARED=OFF -DSDL_STATIC=ON -DSDL_X11_XTEST=OFF
           cmake --build build_sdl
           sudo cmake --install build_sdl
 
