@@ -1,4 +1,6 @@
-/target
-/logs
-/apps
-.idea
+temp
+.vscode
+apps
+logs
+*.exe
+*.apb
