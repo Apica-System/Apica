@@ -68,9 +68,9 @@ jobs:
       - uses: actions/checkout@v4
 
       #################################################
-      # Linux
+      # Linux (Compilation complète de la SDL3)
       #################################################
-      - name: Install dependencies (Linux)
+      - name: Install System Dependencies (Linux)
         if: runner.os == 'Linux'
         run: |
           sudo apt update
@@ -78,10 +78,51 @@ jobs:
             build-essential \
             make \
             pkg-config \
-            libsdl3-dev \
-            libsdl3-image-dev \
-            libsdl3-mixer-dev \
-            libsdl3-ttf-dev
+            cmake \
+            libasound2-dev \
+            libpulse-dev \
+            libaudio-dev \
+            libjack-dev \
+            libx11-dev \
+            libxext-dev \
+            libxrandr-dev \
+            libxcursor-dev \
+            libxfixes-dev \
+            libxi-dev \
+            libxss-dev \
+            libwayland-dev \
+            libegl1-mesa-dev \
+            libgles2-mesa-dev \
+            libdbus-1-dev \
+            libibus-1.0-dev \
+            libudev-dev
+
+      - name: Build and Install SDL3 Suite (Linux Statique)
+        if: runner.os == 'Linux'
+        run: |
+          # SDL3 Core
+          git clone --depth 1 https://github.com/libsdl-org/SDL.git -b main
+          cmake -S SDL -B build_sdl -DCMAKE_BUILD_TYPE=Release -DSDL_SHARED=OFF -DSDL_STATIC=ON
+          cmake --build build_sdl
+          sudo cmake --install build_sdl
+
+          # SDL3_image
+          git clone --depth 1 https://github.com/libsdl-org/SDL_image.git -b main
+          cmake -S SDL_image -B build_image -DCMAKE_BUILD_TYPE=Release -DSDL_IMAGE_SHARED=OFF -DSDL_IMAGE_STATIC=ON
+          cmake --build build_image
+          sudo cmake --install build_image
+
+          # SDL3_mixer
+          git clone --depth 1 https://github.com/libsdl-org/SDL_mixer.git -b main
+          cmake -S SDL_mixer -B build_mixer -DCMAKE_BUILD_TYPE=Release -DSDL_MIXER_SHARED=OFF -DSDL_MIXER_STATIC=ON
+          cmake --build build_mixer
+          sudo cmake --install build_mixer
+
+          # SDL3_ttf
+          git clone --depth 1 https://github.com/libsdl-org/SDL_ttf.git -b main
+          cmake -S SDL_ttf -B build_ttf -DCMAKE_BUILD_TYPE=Release -DSDL_TTF_SHARED=OFF -DSDL_TTF_STATIC=ON
+          cmake --build build_ttf
+          sudo cmake --install build_ttf
 
       #################################################
       # macOS
