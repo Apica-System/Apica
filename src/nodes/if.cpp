@@ -1,7 +1,7 @@
 #include "nodes/if.hpp"
 #include "values/bool.hpp"
 #include "values/null.hpp"
-#include "systems/evaluator.hpp"
+#include "VM/evaluator.hpp"
 
 using namespace nodes;
 
@@ -20,7 +20,7 @@ NodeKind NodeIf::getKind() const {
 }
 
 common::elements::Element *NodeIf::evaluate(uint8_t modifier) {
-    common::elements::Element *condition = this->condition->evaluate(systems::EvaluatorModifier::EM_None);
+    common::elements::Element *condition = this->condition->evaluate(VM::EvaluatorModifier::EM_None);
     condition->checkAndConvert(common::bytecodes::ApicaTypeBytecode::Bool);
     if (condition->isErrorOrController())
         return condition;

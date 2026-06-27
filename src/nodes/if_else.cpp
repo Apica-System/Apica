@@ -1,5 +1,5 @@
 #include "nodes/if_else.hpp"
-#include "systems/evaluator.hpp"
+#include "VM/evaluator.hpp"
 #include "values/bool.hpp"
 #include "values/null.hpp"
 
@@ -21,7 +21,7 @@ NodeKind NodeIfElse::getKind() const {
 }
 
 common::elements::Element *NodeIfElse::evaluate(uint8_t modifier) {
-    common::elements::Element *condition = this->condition->evaluate(systems::EvaluatorModifier::EM_None);
+    common::elements::Element *condition = this->condition->evaluate(VM::EvaluatorModifier::EM_None);
     condition->checkAndConvert(common::bytecodes::ApicaTypeBytecode::Bool);
     if (condition->isErrorOrController())
         return condition;

@@ -1,6 +1,6 @@
 temp
 .vscode
-apps
-logs
 *.exe
 *.apb
+*.dll
+build

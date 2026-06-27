@@ -48,11 +48,13 @@ void LoggerSystem::createLogFileFor(const std::string &app_name) {
 }
 
 void LoggerSystem::systemLognError(const std::string &message) const {
+    std::lock_guard<std::mutex> lock(this->logger_mutex);
     if (this->log_file)
         fprintf(this->log_file.value(), "\x1b[31m%s\x1b[0m\n", message.c_str());
 }
 
 void LoggerSystem::systemLognSuccess(const std::string &message) const {
+    std::lock_guard<std::mutex> lock(this->logger_mutex);
     if (this->log_file)
         fprintf(this->log_file.value(), "\x1b[32m%s\x1b[0m\n", message.c_str());
 }
@@ -100,6 +102,7 @@ void LoggerSystem::getActualTime() {
 }
 
 common::elements::Element *LoggerSystem::logParameters(const std::vector<common::elements::Element*> &parameters, const char *start, const char *end) const {
+    std::lock_guard<std::mutex> lock(this->logger_mutex);
     if (this->log_file) {
         fprintf(this->log_file.value(), "%s", start);
         for (common::elements::Element *element : parameters) {
@@ -114,6 +117,7 @@ common::elements::Element *LoggerSystem::logParameters(const std::vector<common:
         }
 
         fprintf(this->log_file.value(), "%s", end);
+        fflush(this->log_file.value());
     }
 
     return new common::elements::Element(

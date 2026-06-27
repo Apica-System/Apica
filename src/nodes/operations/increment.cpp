@@ -1,5 +1,5 @@
 #include "nodes/operations/increment.hpp"
-#include "systems/evaluator.hpp"
+#include "VM/evaluator.hpp"
 #include "values/error.hpp"
 
 using namespace nodes;
@@ -18,7 +18,7 @@ NodeKind NodeIncrement::getKind() const {
 }
 
 common::elements::Element *NodeIncrement::evaluate(uint8_t modifier) {
-    common::elements::Element *operand = this->operand->evaluate(modifier & ~systems::EvaluatorModifier::EM_CopyCall);
+    common::elements::Element *operand = this->operand->evaluate(modifier & ~VM::EvaluatorModifier::EM_CopyCall);
     if (operand->isErrorOrController())
         return operand;
     

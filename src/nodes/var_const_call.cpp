@@ -1,5 +1,5 @@
 #include "nodes/var_const_call.hpp"
-#include "systems/evaluator.hpp"
+#include "VM/evaluator.hpp"
 #include "values/error.hpp"
 
 using namespace nodes;
@@ -14,7 +14,7 @@ NodeKind NodeVarConstCall::getKind() const {
 }
 
 common::elements::Element *NodeVarConstCall::evaluate(uint8_t modifier) {
-    std::optional<common::elements::Element*> element = systems::EvaluatorSystem::getInstance().getElement(this->id);
+    std::optional<common::elements::Element*> element = VM::VMEvaluator::getInstance().getElement(this->id);
     if (!element) {
         return new common::elements::Element(
             common::elements::ElementModifier::Error,
@@ -26,7 +26,7 @@ common::elements::Element *NodeVarConstCall::evaluate(uint8_t modifier) {
     }
 
     common::elements::Element *result = element.value();
-    if (modifier & systems::EvaluatorModifier::EM_CopyCall) {
+    if (modifier & VM::EvaluatorModifier::EM_CopyCall) {
         result = result->autoConvert(result->getValue()->getKind());
     } else {
         result = new common::elements::Element(

@@ -1,5 +1,5 @@
 #include "nodes/while.hpp"
-#include "systems/evaluator.hpp"
+#include "VM/evaluator.hpp"
 #include "values/bool.hpp"
 #include "values/null.hpp"
 
@@ -19,20 +19,20 @@ NodeKind NodeWhile::getKind() const {
     return NodeKind::While;
 }
 
-void recalculateCondition(common::elements::Element *condition, common::elements::Element *body_result, nodes::Node *condition_node) {
+void recalculateCondition(common::elements::Element *&condition, common::elements::Element *body_result, nodes::Node *condition_node) {
     delete body_result;
     delete condition;
-    condition = condition_node->evaluate(systems::EvaluatorModifier::EM_None);
+    condition = condition_node->evaluate(VM::EvaluatorModifier::EM_None);
 }
 
 common::elements::Element *NodeWhile::evaluate(uint8_t modifier) {
-    common::elements::Element *condition = this->condition->evaluate(systems::EvaluatorModifier::EM_None);
+    common::elements::Element *condition = this->condition->evaluate(VM::EvaluatorModifier::EM_None);
     condition->checkAndConvert(common::bytecodes::ApicaTypeBytecode::Bool);
     if (condition->isErrorOrController())
         return condition;
 
     common::values::ValueBool *result = static_cast<common::values::ValueBool*>(condition->getValue());
-    while (result->getValue().value()) {
+    while (VM::VMEvaluator::getInstance().isRunning() && result->getValue().value()) {
         common::elements::Element *body_result = this->body->evaluate(modifier);
         if (body_result->isErrorOrController()) {
             if (body_result->getModifier() & common::elements::ElementModifier::Break) {

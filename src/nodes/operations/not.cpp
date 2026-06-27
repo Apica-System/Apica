@@ -1,5 +1,4 @@
 #include "nodes/operations/not.hpp"
-#include "systems/evaluator.hpp"
 
 using namespace nodes;
 

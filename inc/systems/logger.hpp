@@ -4,6 +4,8 @@
 #include <optional>
 #include <string>
 #include <vector>
+#include <mutex>
+
 #include "elements.hpp"
 
 namespace systems {
@@ -26,6 +28,7 @@ namespace systems {
     private:
         std::optional<FILE*> log_file;
         std::string actual_date;
+        mutable std::mutex logger_mutex;
 
         LoggerSystem();
         ~LoggerSystem();

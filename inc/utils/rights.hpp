@@ -14,8 +14,8 @@ namespace utils {
     };
 
     enum ApicaMode : uint8_t {
-        APM_SpecialQuit, APM_SpecialInit,
+        APM_SpecialQuit,
 
-        APM_Init, APM_Update, APM_Quit
+        APM_Init, APM_Update, APM_Quit, APM_QuitFinished
     };
 }

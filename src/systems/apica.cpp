@@ -1,7 +1,7 @@
 #include "systems/apica.hpp"
 #include "systems/logger.hpp"
-#include "systems/reader.hpp"
-#include "systems/evaluator.hpp"
+
+#include "VM/evaluator.hpp"
 
 #include "utils/errors.hpp"
 #include "values/u64.hpp"
@@ -11,7 +11,7 @@
 using namespace systems;
 
 ApicaSystem::ApicaSystem()
-    : right(utils::ApicaRight::APR_MAIN_MENU), mode(utils::ApicaMode::APM_SpecialInit) {
+    : right(utils::ApicaRight::APR_MAIN_MENU), mode(utils::ApicaMode::APM_Init), evaluator_thread(nullptr) {
 
 }
 
@@ -34,52 +34,60 @@ common::elements::Element *ApicaSystem::quitApp() {
     );
 }
 
+void ApicaSystem::forceQuitApp() {
+    this->mode = utils::ApicaMode::APM_QuitFinished;
+}
+
 void ApicaSystem::loadApp(const std::string &name) {
     if (!(this->right & utils::ApicaRight::APR_AppRight))
         return;
     
     systems::LoggerSystem::getInstance().createLogFileFor(name);
-    systems::ReaderSystem::getInstance().readApp(name);
-
-    std::optional<common::values::Value*> id_count = systems::ReaderSystem::getInstance().getSpecification(common::bytecodes::ApicaSpecificationBytecode::IdCount);
-    if (!id_count) {
-        systems::LoggerSystem::getInstance().systemLognError(std::string(utils::APC_ERROR_NO_ID_COUNT));
-        this->mode = utils::ApicaMode::APM_Quit;
+    if (!VM::VMEvaluator::getInstance().readApp(name)) {
+        this->mode = utils::APM_QuitFinished;
         return;
     }
+    
+    this->evaluator_thread = SDL_CreateThreadRuntime(
+        VM::VMEvaluator::loop,
+        "VMThread",
+        nullptr,
+        reinterpret_cast<SDL_FunctionPointer>(SDL_BeginThreadFunction),
+        reinterpret_cast<SDL_FunctionPointer>(SDL_EndThreadFunction)
+    );
 
-    common::values::ValueU64 *count = static_cast<common::values::ValueU64*>(id_count.value());
-    systems::EvaluatorSystem::getInstance().reset(count->getValue().value());
+    if (!this->evaluator_thread) {
+        systems::LoggerSystem::getInstance().systemLognError(std::string(utils::EVL_ERROR_LAUNCH_THREAD));
+        this->mode = utils::APM_SpecialQuit;
+    }
+}
+
+utils::ApicaMode ApicaSystem::getMode() {
+    utils::ApicaMode mode = this->mode;
+    if (this->mode == utils::APM_Init)
+        this->mode = utils::APM_Update;
+
+    return mode;
+}
+
+void ApicaSystem::setQuitFinished() {
+    this->mode = utils::APM_QuitFinished;
 }
 
 void ApicaSystem::update() {
-    switch (this->mode) {
-        case utils::ApicaMode::APM_SpecialInit: {
+    if (this->mode == utils::APM_QuitFinished) {
+        VM::VMEvaluator::getInstance().cancel();
+
+        int result = 0;
+        SDL_WaitThread(this->evaluator_thread, &result);
+        this->evaluator_thread = nullptr;
+
+        if (this->right & utils::ApicaRight::APR_MainMenuRight) {
+            this->mode = utils::ApicaMode::APM_SpecialQuit;
+        } else {
+            this->right = utils::ApicaRight::APR_MAIN_MENU;
             this->mode = utils::ApicaMode::APM_Init;
             this->loadApp(utils::MAIN_MENU_NAME);
-        } break;
-
-        case utils::ApicaMode::APM_Init: {
-            systems::EvaluatorSystem::getInstance().evaluate(common::bytecodes::ApicaEntrypointBytecode::Init);
-            this->mode = utils::ApicaMode::APM_Update;
-        } break;
-
-        case utils::ApicaMode::APM_Update: {
-            if (!systems::EvaluatorSystem::getInstance().evaluate(common::bytecodes::ApicaEntrypointBytecode::Update))
-                this->mode = utils::ApicaMode::APM_Quit;
-        } break;
-
-        case utils::ApicaMode::APM_Quit: {
-            systems::EvaluatorSystem::getInstance().evaluate(common::bytecodes::ApicaEntrypointBytecode::Quit);
-            if (this->right & utils::ApicaRight::APR_MainMenuRight) {
-                this->mode = utils::ApicaMode::APM_SpecialQuit;
-            } else {
-                this->right = utils::ApicaRight::APR_MAIN_MENU;
-                this->mode = utils::ApicaMode::APM_Init;
-                this->loadApp(utils::MAIN_MENU_NAME);
-            }
-        } break;
-
-        default: break;
+        }
     }
 }

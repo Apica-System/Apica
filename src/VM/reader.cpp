@@ -1,7 +1,9 @@
-#include "systems/reader.hpp"
+#include "VM/reader.hpp"
+
+#include "systems/logger.hpp"
+
 #include "utils/errors.hpp"
 #include "utils/read.hpp"
-#include "systems/logger.hpp"
 #include "utils/constants.hpp"
 
 #include "values/string.hpp"
@@ -24,14 +26,9 @@
 #include "nodes/if_else.hpp"
 #include "nodes/while.hpp"
 
-using namespace systems;
+using namespace VM;
 
-ReaderSystem &ReaderSystem::getInstance() {
-    static ReaderSystem instance;
-    return instance;
-}
-
-void ReaderSystem::clear() {
+void VMReader::clear() {
     for (auto &entry : this->entrypoints) {
         if (entry.second) delete entry.second;
     }
@@ -44,7 +41,7 @@ void ReaderSystem::clear() {
     this->specifications.clear();
 }
 
-std::optional<nodes::NodeCompound*> ReaderSystem::getEntryNode(common::bytecodes::ApicaEntrypointBytecode entry_bytecode) const {
+std::optional<nodes::NodeCompound*> VMReader::getEntryNode(common::bytecodes::ApicaEntrypointBytecode entry_bytecode) const {
     auto entry = this->entrypoints.find(entry_bytecode);
     if (entry == this->entrypoints.end())
         return std::nullopt;
@@ -52,7 +49,7 @@ std::optional<nodes::NodeCompound*> ReaderSystem::getEntryNode(common::bytecodes
     return entry->second;
 }
 
-std::optional<common::values::Value*> ReaderSystem::getSpecification(common::bytecodes::ApicaSpecificationBytecode spec_bytecode) const {
+std::optional<common::values::Value*> VMReader::getSpecification(common::bytecodes::ApicaSpecificationBytecode spec_bytecode) const {
     auto spec = this->specifications.find(spec_bytecode);
     if (spec == this->specifications.end())
         return std::nullopt;
@@ -60,7 +57,7 @@ std::optional<common::values::Value*> ReaderSystem::getSpecification(common::byt
     return spec->second;
 }
 
-bool ReaderSystem::readApp(const std::string &app_name) {
+bool VMReader::readApp(const std::string &app_name) {
     this->clear();
     std::string filepath(utils::APP_PATH);
     filepath += app_name;
@@ -72,7 +69,7 @@ bool ReaderSystem::readApp(const std::string &app_name) {
     if (!input_file) {
         std::string error_message(utils::RDR_ERROR_INCORRECT_APB_FILE);
         error_message += app_name;
-        LoggerSystem::getInstance().systemLognError(error_message);
+        systems::LoggerSystem::getInstance().systemLognError(error_message);
         return false;
     }
 
@@ -112,15 +109,15 @@ bool ReaderSystem::readApp(const std::string &app_name) {
     return true;
 }
 
-ReaderSystem::ReaderSystem() {
+VMReader::VMReader() {
 
 }
 
-ReaderSystem::~ReaderSystem() {
+VMReader::~VMReader() {
     this->clear();
 }
 
-bool ReaderSystem::readSpecification(FILE *file, common::bytecodes::ApicaSpecificationBytecode spec_bytecode) {
+bool VMReader::readSpecification(FILE *file, common::bytecodes::ApicaSpecificationBytecode spec_bytecode) {
     switch (spec_bytecode) {
         case common::bytecodes::ApicaSpecificationBytecode::Title: 
             return this->readDataString(file, spec_bytecode);
@@ -147,13 +144,13 @@ bool ReaderSystem::readSpecification(FILE *file, common::bytecodes::ApicaSpecifi
             std::string error_message(utils::RDR_ERROR_UNKNOWN_SPEC_BYTECODE);
             error_message += std::to_string(spec_bytecode);
 
-            LoggerSystem::getInstance().systemLognError(error_message);
+            systems::LoggerSystem::getInstance().systemLognError(error_message);
             return false;
         }
     }
 }
 
-bool ReaderSystem::readDataString(FILE *file, common::bytecodes::ApicaSpecificationBytecode spec_bytecode) {
+bool VMReader::readDataString(FILE *file, common::bytecodes::ApicaSpecificationBytecode spec_bytecode) {
     std::optional<std::string> data = utils::readString(file);
     if (!data) return false;
 
@@ -161,7 +158,7 @@ bool ReaderSystem::readDataString(FILE *file, common::bytecodes::ApicaSpecificat
     return true;
 }
 
-bool ReaderSystem::readDataBool(FILE *file, common::bytecodes::ApicaSpecificationBytecode spec_bytecode) {
+bool VMReader::readDataBool(FILE *file, common::bytecodes::ApicaSpecificationBytecode spec_bytecode) {
     std::optional<uint8_t> data = utils::readU8(file);
     if (!data) return false;
 
@@ -169,7 +166,7 @@ bool ReaderSystem::readDataBool(FILE *file, common::bytecodes::ApicaSpecificatio
     return true;
 }
 
-bool ReaderSystem::readDataU32(FILE *file, common::bytecodes::ApicaSpecificationBytecode spec_bytecode) {
+bool VMReader::readDataU32(FILE *file, common::bytecodes::ApicaSpecificationBytecode spec_bytecode) {
     std::optional<uint32_t> data = utils::readU32(file);
     if (!data) return false;
 
@@ -177,7 +174,7 @@ bool ReaderSystem::readDataU32(FILE *file, common::bytecodes::ApicaSpecification
     return true;
 }
 
-bool ReaderSystem::readDataU64(FILE *file, common::bytecodes::ApicaSpecificationBytecode spec_bytecode) {
+bool VMReader::readDataU64(FILE *file, common::bytecodes::ApicaSpecificationBytecode spec_bytecode) {
     std::optional<uint64_t> data = utils::readU64(file);
     if (!data) return false;
 
@@ -185,7 +182,7 @@ bool ReaderSystem::readDataU64(FILE *file, common::bytecodes::ApicaSpecification
     return true;
 }
 
-bool ReaderSystem::readEntrypoint(FILE *file) {
+bool VMReader::readEntrypoint(FILE *file) {
     std::optional<common::bytecodes::ApicaEntrypointBytecode> entry_bytecode = utils::readEntryBytecode(file);
     if (!entry_bytecode)
         return false;
@@ -214,11 +211,11 @@ bool ReaderSystem::readEntrypoint(FILE *file) {
     }
 
     this->entrypoints[entry_bytecode.value()] = new nodes::NodeCompound(nodes);
-    LoggerSystem::getInstance().systemLognSuccess("An entrypoint was read successfully");
+    systems::LoggerSystem::getInstance().systemLognSuccess("An entrypoint was read successfully");
     return true;
 }
 
-std::optional<nodes::Node*> ReaderSystem::readNode(FILE *file, common::bytecodes::ApicaBytecode bytecode) {
+std::optional<nodes::Node*> VMReader::readNode(FILE *file, common::bytecodes::ApicaBytecode bytecode) {
     switch (bytecode) {
         case common::bytecodes::ApicaBytecode::Compound: return this->readCompound(file);
         case common::bytecodes::ApicaBytecode::BuiltinFuncCall: return this->readBuiltinFuncCall(file);
@@ -242,13 +239,13 @@ std::optional<nodes::Node*> ReaderSystem::readNode(FILE *file, common::bytecodes
             std::string error_message(utils::RDR_ERROR_UNKNOWN_BYTECODE);
             error_message += std::to_string(bytecode);
 
-            LoggerSystem::getInstance().systemLognError(error_message);
+            systems::LoggerSystem::getInstance().systemLognError(error_message);
             return std::nullopt;
         }
     }
 }
 
-std::optional<nodes::Node*> ReaderSystem::readCompound(FILE *file) {
+std::optional<nodes::Node*> VMReader::readCompound(FILE *file) {
     std::optional<uint64_t> compound_size = utils::readU64(file);
     if (!compound_size) return std::nullopt;
     
@@ -277,7 +274,7 @@ std::optional<nodes::Node*> ReaderSystem::readCompound(FILE *file) {
     return new nodes::NodeCompound(nodes);
 }
 
-std::optional<nodes::Node*> ReaderSystem::readBuiltinFuncCall(FILE *file) {
+std::optional<nodes::Node*> VMReader::readBuiltinFuncCall(FILE *file) {
     std::optional<common::bytecodes::ApicaBuiltinFunctionBytecode> func_bytecode = utils::readBuiltinFuncBytecode(file);
     if (!func_bytecode) return std::nullopt;
 
@@ -309,7 +306,7 @@ std::optional<nodes::Node*> ReaderSystem::readBuiltinFuncCall(FILE *file) {
     return new nodes::NodeBuiltinFuncCall(func_bytecode.value(), parameters);
 }
 
-std::optional<nodes::Node*> ReaderSystem::readLiteral(FILE *file) {
+std::optional<nodes::Node*> VMReader::readLiteral(FILE *file) {
     std::optional<common::bytecodes::ApicaTypeBytecode> type_bytecode = utils::readTypeBytecode(file);
     if (!type_bytecode) return std::nullopt;
 
@@ -339,20 +336,20 @@ std::optional<nodes::Node*> ReaderSystem::readLiteral(FILE *file) {
             std::string error_message(utils::RDR_ERROR_UNKNOWN_TYPE_BYTECODE);
             error_message += std::to_string(type_bytecode.value());
 
-            LoggerSystem::getInstance().systemLognError(error_message);
+            systems::LoggerSystem::getInstance().systemLognError(error_message);
             return std::nullopt;
         }
     }
 }
 
-std::optional<nodes::Node*> ReaderSystem::readVarConstCall(FILE *file) {
+std::optional<nodes::Node*> VMReader::readVarConstCall(FILE *file) {
     std::optional<uint64_t> id = utils::readU64(file);
     if (!id) return std::nullopt;
 
     return new nodes::NodeVarConstCall(id.value());
 }
 
-std::optional<nodes::Node*> ReaderSystem::readVarConstDecl(FILE *file, bool is_const) {
+std::optional<nodes::Node*> VMReader::readVarConstDecl(FILE *file, bool is_const) {
     std::optional<uint64_t> id = utils::readU64(file);
     if (!id) return std::nullopt;
 
@@ -372,7 +369,7 @@ std::optional<nodes::Node*> ReaderSystem::readVarConstDecl(FILE *file, bool is_c
     }
 }
 
-std::optional<nodes::Node*> ReaderSystem::readBinary(FILE *file, common::bytecodes::ApicaBytecode operation) {
+std::optional<nodes::Node*> VMReader::readBinary(FILE *file, common::bytecodes::ApicaBytecode operation) {
     std::optional<common::bytecodes::ApicaBytecode> bytecode = utils::readBytecode(file);
     if (!bytecode) return std::nullopt;
 
@@ -406,7 +403,7 @@ std::optional<nodes::Node*> ReaderSystem::readBinary(FILE *file, common::bytecod
     }
 }
 
-std::optional<nodes::Node*> ReaderSystem::readUnary(FILE *file, common::bytecodes::ApicaBytecode operation) {
+std::optional<nodes::Node*> VMReader::readUnary(FILE *file, common::bytecodes::ApicaBytecode operation) {
     std::optional<common::bytecodes::ApicaBytecode> bytecode = utils::readBytecode(file);
     if (!bytecode) return std::nullopt;
 
@@ -430,7 +427,7 @@ std::optional<nodes::Node*> ReaderSystem::readUnary(FILE *file, common::bytecode
     }
 }
 
-std::optional<nodes::Node*> ReaderSystem::readIf(FILE *file, bool has_else) {
+std::optional<nodes::Node*> VMReader::readIf(FILE *file, bool has_else) {
     std::optional<common::bytecodes::ApicaBytecode> bytecode = utils::readBytecode(file);
     if (!bytecode) return std::nullopt;
 
@@ -469,7 +466,7 @@ std::optional<nodes::Node*> ReaderSystem::readIf(FILE *file, bool has_else) {
     return new nodes::NodeIfElse(condition.value(), if_body.value(), else_body.value());
 }
 
-std::optional<nodes::Node*> ReaderSystem::readWhile(FILE *file) {
+std::optional<nodes::Node*> VMReader::readWhile(FILE *file) {
     std::optional<common::bytecodes::ApicaBytecode> bytecode = utils::readBytecode(file);
     if (!bytecode) return std::nullopt;
 

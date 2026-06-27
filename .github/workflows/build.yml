@@ -50,17 +50,20 @@ jobs:
           - os: ubuntu-latest
             cxx: g++
             ext: ""
-            artifact: Apica-linux
+            artifact: Apica-linux.tar.gz
+            shadercross_url: "https://nightly.link/libsdl-org/SDL_shadercross/workflows/main/main/SDL3_shadercross-shared-Ubuntu24.04-x64.zip"
 
           - os: macos-latest
             cxx: clang++
             ext: ""
-            artifact: Apica-macos
+            artifact: Apica-macos.zip
+            shadercross_url: "https://nightly.link/libsdl-org/SDL_shadercross/workflows/main/main/SDL3_shadercross-macos-arm64.zip"
 
           - os: windows-latest
             cxx: g++
             ext: .exe
-            artifact: Apica-windows.exe
+            artifact: Apica-windows.zip
+            shadercross_url: "https://nightly.link/libsdl-org/SDL_shadercross/workflows/main/main/SDL3_shadercross-VC-x64.zip"
 
     runs-on: ${{ matrix.os }}
 
@@ -70,64 +73,24 @@ jobs:
           submodules: recursive
 
       #################################################
-      # Linux (Compilation complète de la SDL3)
+      # Linux Dependencies
       #################################################
-      - name: Install System Dependencies (Linux)
+      - name: Install dependencies (Linux)
         if: runner.os == 'Linux'
         run: |
+          sudo add-apt-repository ppa:cybermax-dexter/sdl3-backport -y
           sudo apt update
           sudo apt install -y \
             build-essential \
             make \
             pkg-config \
-            cmake \
-            libasound2-dev \
-            libpulse-dev \
-            libaudio-dev \
-            libjack-dev \
-            libx11-dev \
-            libxext-dev \
-            libxrandr-dev \
-            libxcursor-dev \
-            libxfixes-dev \
-            libxi-dev \
-            libxss-dev \
-            libwayland-dev \
-            libegl1-mesa-dev \
-            libgles2-mesa-dev \
-            libdbus-1-dev \
-            libibus-1.0-dev \
-            libudev-dev
-
-      - name: Build and Install SDL3 Suite (Linux Statique)
-        if: runner.os == 'Linux'
-        run: |
-          # SDL3 Core (Ajout de -DSDL_X11_XTEST=OFF)
-          git clone --depth 1 https://github.com/libsdl-org/SDL.git -b main
-          cmake -S SDL -B build_sdl -DCMAKE_BUILD_TYPE=Release -DSDL_SHARED=OFF -DSDL_STATIC=ON -DSDL_X11_XTEST=OFF
-          cmake --build build_sdl
-          sudo cmake --install build_sdl
-
-          # SDL3_image
-          git clone --depth 1 https://github.com/libsdl-org/SDL_image.git -b main
-          cmake -S SDL_image -B build_image -DCMAKE_BUILD_TYPE=Release -DSDL_IMAGE_SHARED=OFF -DSDL_IMAGE_STATIC=ON
-          cmake --build build_image
-          sudo cmake --install build_image
-
-          # SDL3_mixer
-          git clone --depth 1 https://github.com/libsdl-org/SDL_mixer.git -b main
-          cmake -S SDL_mixer -B build_mixer -DCMAKE_BUILD_TYPE=Release -DSDL_MIXER_SHARED=OFF -DSDL_MIXER_STATIC=ON
-          cmake --build build_mixer
-          sudo cmake --install build_mixer
-
-          # SDL3_ttf
-          git clone --depth 1 https://github.com/libsdl-org/SDL_ttf.git -b main
-          cmake -S SDL_ttf -B build_ttf -DCMAKE_BUILD_TYPE=Release -DSDL_TTF_SHARED=OFF -DSDL_TTF_STATIC=ON
-          cmake --build build_ttf
-          sudo cmake --install build_ttf
+            libsdl3-dev \
+            libsdl3-image-dev \
+            libsdl3-mixer-dev \
+            libsdl3-ttf-dev
 
       #################################################
-      # macOS
+      # macOS Dependencies
       #################################################
       - name: Install dependencies (macOS)
         if: runner.os == 'macOS'
@@ -136,7 +99,7 @@ jobs:
           brew install sdl3 sdl3_image sdl3_mixer sdl3_ttf pkg-config
 
       #################################################
-      # Windows (MSYS2)
+      # Windows Dependencies (MSYS2)
       #################################################
       - name: Setup MSYS2
         if: runner.os == 'Windows'
@@ -146,12 +109,57 @@ jobs:
           update: true
           install: >-
             make
+            zip
+            unzip
+            curl
             mingw-w64-ucrt-x86_64-gcc
             mingw-w64-ucrt-x86_64-pkgconf
             mingw-w64-ucrt-x86_64-sdl3
             mingw-w64-ucrt-x86_64-sdl3-image
             mingw-w64-ucrt-x86_64-sdl3-mixer
             mingw-w64-ucrt-x86_64-sdl3-ttf
+
+      #################################################
+      # Download & Clean SDL_shadercross
+      #################################################
+      - name: Fetch and Install SDL_shadercross Nightly (Linux/macOS)
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          mkdir -p shadercross_temp
+          curl -L "${{ matrix.shadercross_url }}" -o shadercross_temp/shadercross.zip
+          cd shadercross_temp && unzip shadercross.zip && rm shadercross.zip
+          
+          rm -f libSDL3.so* libSDL3.dylib
+          cd ..
+          
+          if [ "${{ runner.os }}" = "Linux" ]; then
+            sudo cp -r shadercross_temp/include/* /usr/include/
+            sudo cp shadercross_temp/libSDL3_shadercross*.so* /usr/lib/x86_64-linux-gnu/ 2>/dev/null || true
+            sudo sh -c 'echo -e "Name: sdl3-shadercross\nDescription: Shadercross\nVersion: 3.0.0\nLibs: -lSDL3_shadercross" > /usr/lib/x86_64-linux-gnu/pkgconfig/sdl3-shadercross.pc'
+          
+          elif [ "${{ runner.os }}" = "macOS" ]; then
+            sudo cp -r shadercross_temp/include/* /opt/homebrew/include/ 2>/dev/null || sudo cp -r shadercross_temp/include/* /usr/local/include/
+            sudo cp shadercross_temp/libSDL3_shadercross*.dylib /opt/homebrew/lib/ 2>/dev/null || sudo cp shadercross_temp/libSDL3_shadercross*.dylib /usr/local/lib/
+            sudo sh -c 'echo -e "Name: sdl3-shadercross\nDescription: Shadercross\nVersion: 3.0.0\nLibs: -lSDL3_shadercross" > /opt/homebrew/lib/pkgconfig/sdl3-shadercross.pc' 2>/dev/null || true
+          fi
+
+      - name: Fetch and Install SDL_shadercross Nightly (Windows MSYS2)
+        if: runner.os == 'Windows'
+        shell: msys2 {0}
+        run: |
+          mkdir -p shadercross_temp
+          curl -L "${{ matrix.shadercross_url }}" -o shadercross_temp/shadercross.zip
+          cd shadercross_temp && unzip shadercross.zip && rm shadercross.zip
+          
+          rm -f bin/SDL3.dll SDL3.dll
+          cd ..
+          
+          cp -r shadercross_temp/include/* /ucrt64/include/
+          cp shadercross_temp/lib/SDL3_shadercross.lib /ucrt64/lib/
+          cp shadercross_temp/*.dll /ucrt64/bin/ 2>/dev/null || true
+          cp shadercross_temp/bin/*.dll /ucrt64/bin/ 2>/dev/null || true
+          echo -e "Name: sdl3-shadercross\nDescription: Shadercross\nVersion: 3.0.0\nLibs: -lSDL3_shadercross" > /ucrt64/lib/pkgconfig/sdl3-shadercross.pc
 
       #################################################
       # Build
@@ -163,7 +171,8 @@ jobs:
           make build \
             CXX="${{ matrix.cxx }}" \
             EXT="${{ matrix.ext }}" \
-            SDL_DIR=""
+            SDL_DIR="" \
+            BUILD_DIR=""
 
       - name: Build (Windows)
         if: runner.os == 'Windows'
@@ -172,17 +181,70 @@ jobs:
           make build \
             CXX="${{ matrix.cxx }}" \
             EXT="${{ matrix.ext }}" \
-            SDL_DIR=""
+            SDL_DIR="" \
+            BUILD_DIR=""
 
       #################################################
       # Package
       #################################################
 
-      - name: Package
+      - name: Package (Linux)
+        if: runner.os == 'Linux'
         shell: bash
         run: |
-          mkdir -p dist
-          cp Apica${{ matrix.ext }} dist/${{ matrix.artifact }}
+          mkdir -p dist/Apica-linux
+          cp Apica dist/Apica-linux/
+          
+          cp /usr/lib/x86_64-linux-gnu/libSDL3*.so* dist/Apica-linux/ 2>/dev/null || true
+          cp shadercross_temp/*.so* dist/Apica-linux/ 2>/dev/null || true
+          
+          echo '#!/bin/sh' > dist/Apica-linux/Apica.sh
+          echo 'ORIGIN=$$(dirname "$$(readlink -f "$$0")")' >> dist/Apica-linux/Apica.sh
+          echo 'export LD_LIBRARY_PATH="$$ORIGIN:$$LD_LIBRARY_PATH"' >> dist/Apica-linux/Apica.sh
+          echo 'exec "$$ORIGIN/Apica" "$$@"' >> dist/Apica-linux/Apica.sh
+          chmod +x dist/Apica-linux/Apica.sh
+          chmod +x dist/Apica-linux/Apica
+
+          cd dist
+          tar -czvf Apica-linux.tar.gz Apica-linux/
+          rm -rf Apica-linux
+
+      - name: Package (macOS)
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          mkdir -p dist/Apica.app/Contents/MacOS
+          mkdir -p dist/Apica.app/Contents/Frameworks
+          cp Apica dist/Apica.app/Contents/MacOS/
+          
+          cp /opt/homebrew/lib/libSDL3*.dylib dist/Apica.app/Contents/Frameworks/ 2>/dev/null || true
+          cp shadercross_temp/*.dylib dist/Apica.app/Contents/Frameworks/ 2>/dev/null || true
+
+          cd dist
+          zip -r Apica-macos.zip Apica.app/
+          rm -rf Apica.app
+
+      - name: Package (Windows)
+        if: runner.os == 'Windows'
+        shell: msys2 {0}
+        run: |
+          mkdir -p dist/Apica-windows
+          cp Apica.exe dist/Apica-windows/
+          
+          cp /ucrt64/bin/SDL3.dll dist/Apica-windows/
+          cp /ucrt64/bin/SDL3_image.dll dist/Apica-windows/
+          cp /ucrt64/bin/SDL3_mixer.dll dist/Apica-windows/
+          cp /ucrt64/bin/SDL3_ttf.dll dist/Apica-windows/
+          cp /ucrt64/bin/libstdc++-6.dll dist/Apica-windows/
+          cp /ucrt64/bin/libgcc_s_ucrt-1.dll dist/Apica-windows/
+          cp /ucrt64/bin/libwinpthread-1.dll dist/Apica-windows/
+          
+          cp shadercross_temp/*.dll dist/Apica-windows/ 2>/dev/null || true
+          cp shadercross_temp/bin/*.dll dist/Apica-windows/ 2>/dev/null || true
+
+          cd dist
+          zip -r Apica-windows.zip Apica-windows/
+          rm -rf Apica-windows
 
       - uses: actions/upload-artifact@v4
         with:

@@ -1,5 +1,5 @@
 #include "nodes/var_decl.hpp"
-#include "systems/evaluator.hpp"
+#include "VM/evaluator.hpp"
 #include "values/null.hpp"
 
 using namespace nodes;
@@ -18,13 +18,13 @@ NodeKind NodeVarDeclaration::getKind() const {
 }
 
 common::elements::Element *NodeVarDeclaration::evaluate(uint8_t) {
-    common::elements::Element *result = this->expression->evaluate(systems::EvaluatorModifier::EM_CopyCall);
+    common::elements::Element *result = this->expression->evaluate(VM::EvaluatorModifier::EM_CopyCall);
     result->checkAndConvert(this->value_type);
     if (result->isErrorOrController())
         return result;
 
     result->removeModifier(common::elements::ElementModifier::Const);
-    systems::EvaluatorSystem::getInstance().setElement(this->id, result);
+    VM::VMEvaluator::getInstance().setElement(this->id, result);
 
     return new common::elements::Element(
         common::elements::ElementModifier::None,

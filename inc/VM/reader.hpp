@@ -2,13 +2,14 @@
 
 #include "bytecodes.hpp"
 #include "values/value.hpp"
-#include <unordered_map>
 #include "nodes/compound.hpp"
+#include <unordered_map>
 
-namespace systems {
-    class ReaderSystem final {
+namespace VM {
+    class VMReader final {
     public:
-        static ReaderSystem &getInstance();
+        VMReader();
+        ~VMReader();
 
         std::optional<nodes::NodeCompound*> getEntryNode(common::bytecodes::ApicaEntrypointBytecode entry_bytecode) const;
         std::optional<common::values::Value*> getSpecification(common::bytecodes::ApicaSpecificationBytecode spec_bytecode) const;
@@ -17,12 +18,6 @@ namespace systems {
     private:
         std::unordered_map<common::bytecodes::ApicaSpecificationBytecode, common::values::Value*> specifications;
         std::unordered_map<common::bytecodes::ApicaEntrypointBytecode, nodes::NodeCompound*> entrypoints;
-    
-        ReaderSystem();
-        ~ReaderSystem();
-
-        ReaderSystem(ReaderSystem &other) = delete;
-        void operator=(const ReaderSystem &) = delete;
 
         void clear();
 

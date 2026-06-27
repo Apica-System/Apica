@@ -26,8 +26,10 @@ namespace utils {
     inline constexpr std::string_view EVL_ERROR_CORRUPTED_CONTINUE = "An incorrect use of continue-statement outside a loop was found";
     inline constexpr std::string_view EVL_ERROR_CORRUPTED_RETURN = "An incorrect use of return-statement outside a function was found";
     inline constexpr std::string_view EVL_ERROR_TOO_BIG_ID = "A too big element id was passed to the EvaluatorSystem -> ";
+    inline constexpr std::string_view EVL_ERROR_LAUNCH_THREAD = "Failed to launch a secondary thread to run the EvaluatorSystem on";
+    inline constexpr std::string_view EVL_ERROR_NO_ID_COUNT = "No id count was found in the APB file";
 
 
-    // Apica System's errors
-    inline constexpr std::string_view APC_ERROR_NO_ID_COUNT = "No IdCount specification found";
+    // Window's errors
+    inline constexpr std::string_view WDW_ERROR_CREATE_WINDOW = "Failed to create a SDL window";
 }

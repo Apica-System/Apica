@@ -1,5 +1,5 @@
 #include "nodes/ternary_op.hpp"
-#include "systems/evaluator.hpp"
+#include "VM/evaluator.hpp"
 #include "values/bool.hpp"
 
 using namespace nodes;
@@ -20,7 +20,7 @@ NodeKind NodeTernaryOperation::getKind() const {
 }
 
 common::elements::Element *NodeTernaryOperation::evaluate(uint8_t modifier) {
-    common::elements::Element *condition = this->condition->evaluate(systems::EvaluatorModifier::EM_None);
+    common::elements::Element *condition = this->condition->evaluate(VM::EvaluatorModifier::EM_None);
     condition->checkAndConvert(common::bytecodes::ApicaTypeBytecode::Bool);
     if (condition->isErrorOrController())
         return condition;
