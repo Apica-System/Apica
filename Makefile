@@ -1,6 +1,6 @@
 .PHONY: build debug run clean
 
-BUILD_DIR ?= build
+BUILD_DIR ?= build/
 CXX ?= g++
 CXXFLAGS := -Wall -Wextra -Wpedantic -Wold-style-cast -std=c++20
 
@@ -57,11 +57,11 @@ OBJECTS := $(patsubst %.cpp,$(OBJDIR)/%.o,$(SOURCES))
 
 build: CXXFLAGS += -O2
 build: $(OBJECTS)
-	$(CXX) $(OBJECTS) $(CXXFLAGS) $(INCLUDES) $(SDL_LIBS) -o $(BUILD_DIR)/Apica$(EXT)
+	$(CXX) $(OBJECTS) $(CXXFLAGS) $(INCLUDES) $(SDL_LIBS) -o $(BUILD_DIR)Apica$(EXT)
 
 debug: CXXFLAGS += -g -D__APICA_DEBUG__
 debug: $(OBJECTS)
-	$(CXX) $(OBJECTS) $(CXXFLAGS) $(INCLUDES) $(SDL_LIBS) -o $(BUILD_DIR)/Apica$(EXT)
+	$(CXX) $(OBJECTS) $(CXXFLAGS) $(INCLUDES) $(SDL_LIBS) -o $(BUILD_DIR)Apica$(EXT)
 
 $(OBJDIR)/%.o: %.cpp
 	@mkdir -p $(dir $@)
