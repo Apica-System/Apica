@@ -94,6 +94,7 @@ jobs:
             libxfixes-dev \
             libxi-dev \
             libxss-dev \
+            libxtst-dev \
             libxkbcommon-dev \
             libwayland-dev \
             libegl1-mesa-dev \
