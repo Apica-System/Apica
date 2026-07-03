@@ -210,7 +210,32 @@ jobs:
           curl -L "${{ matrix.shadercross_url }}" -o shadercross_temp/shadercross.zip
           cd shadercross_temp && unzip shadercross.zip && rm shadercross.zip
 
-          rm -f bin/SDL3.dll SDL3.dll
+          # L'archive nightly.link contient un zip imbriqué à extraire
+          if ls *.zip >/dev/null 2>&1; then
+            unzip -o *.zip
+            rm -f *.zip
+          fi
+
+          echo "--- Structure extraite (avant aplatissement) ---"
+          find . -maxdepth 2
+          echo "-------------------------------------------------"
+
+          # Le zip imbriqué extrait dans un sous-dossier
+          # (ex: SDL3_shadercross-3.0.0-windows-VC-x64/). On aplatit
+          # ce contenu à la racine de shadercross_temp/ s'il existe.
+          NESTED_DIR=$(find . -mindepth 1 -maxdepth 1 -type d -name "SDL3_shadercross*" | head -n 1)
+          if [ -n "$NESTED_DIR" ]; then
+            cp -r "$NESTED_DIR"/* .
+            rm -rf "$NESTED_DIR"
+          fi
+
+          echo "--- Structure extraite (après aplatissement) ---"
+          find . -maxdepth 2
+          echo "-------------------------------------------------"
+
+          # Nettoyage récursif : on supprime toute SDL3.dll embarquée dans l'archive
+          find . -type f -iname "SDL3.dll" -print -delete
+
           cd ..
 
           cp -r shadercross_temp/include/* /ucrt64/include/
