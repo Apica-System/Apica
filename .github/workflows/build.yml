@@ -87,7 +87,6 @@ jobs:
             ninja-build \
             libasound2-dev \
             libpulse-dev \
-            libaudioresource-dev \
             libx11-dev \
             libxext-dev \
             libxrandr-dev \
