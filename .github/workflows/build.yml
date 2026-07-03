@@ -164,6 +164,12 @@ jobs:
           curl -L "${{ matrix.shadercross_url }}" -o shadercross_temp/shadercross.zip
           cd shadercross_temp && unzip shadercross.zip && rm shadercross.zip
           
+          # Si c'est l'archive macOS, elle contient un .tar.gz qu'il faut extraire
+          if [ -f *.tar.gz ]; then
+            tar -xzf *.tar.gz --strip-components=1 2>/dev/null || tar -xzf *.tar.gz
+          fi
+          
+          # Nettoyer les versions de libSDL3 embarquées pour ne garder que shadercross
           rm -f libSDL3.so* libSDL3.dylib
           cd ..
           
@@ -173,9 +179,12 @@ jobs:
             sudo sh -c 'echo -e "Name: sdl3-shadercross\nDescription: Shadercross\nVersion: 3.0.0\nLibs: -lSDL3_shadercross" > /usr/lib/x86_64-linux-gnu/pkgconfig/sdl3-shadercross.pc'
           
           elif [ "${{ runner.os }}" = "macOS" ]; then
-            sudo cp -r shadercross_temp/include/* /opt/homebrew/include/ 2>/dev/null || sudo cp -r shadercross_temp/include/* /usr/local/include/
-            sudo cp shadercross_temp/libSDL3_shadercross*.dylib /opt/homebrew/lib/ 2>/dev/null || sudo cp shadercross_temp/libSDL3_shadercross*.dylib /usr/local/lib/
-            sudo sh -c 'echo -e "Name: sdl3-shadercross\nDescription: Shadercross\nVersion: 3.0.0\nLibs: -lSDL3_shadercross" > /opt/homebrew/lib/pkgconfig/sdl3-shadercross.pc' 2>/dev/null || true
+            # Sécurité : s'assurer que les répertoires cibles existent
+            sudo mkdir -p /opt/homebrew/include /opt/homebrew/lib /opt/homebrew/lib/pkgconfig
+            
+            sudo cp -r shadercross_temp/include/* /opt/homebrew/include/
+            sudo cp shadercross_temp/lib/libSDL3_shadercross*.dylib /opt/homebrew/lib/ 2>/dev/null || sudo cp shadercross_temp/libSDL3_shadercross*.dylib /opt/homebrew/lib/
+            sudo sh -c 'echo -e "Name: sdl3-shadercross\nDescription: Shadercross\nVersion: 3.0.0\nLibs: -lSDL3_shadercross" > /opt/homebrew/lib/pkgconfig/sdl3-shadercross.pc'
           fi
 
       - name: Fetch and Install SDL_shadercross Nightly (Windows MSYS2)
