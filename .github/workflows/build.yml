@@ -177,8 +177,7 @@ jobs:
             tar -xzf *.tar.gz --strip-components=1 2>/dev/null || tar -xzf *.tar.gz
           fi
 
-          # Nettoyage récursif : on supprime toute libSDL3 embarquée,
-          # peu importe le sous-dossier où l'archive shadercross l'a placée
+          # Nettoyage récursif
           find . -type f \( -name "libSDL3.so*" -o -name "libSDL3.dylib" -o -name "libSDL3.*.dylib" \) -print -delete
 
           cd ..
@@ -197,7 +196,6 @@ jobs:
             fi
             sudo cp "$SO_FILE" /usr/lib/x86_64-linux-gnu/
 
-            # S'assurer qu'un symlink non versionné existe pour -lSDL3_shadercross
             SO_BASENAME=$(basename "$SO_FILE")
             if [ "$SO_BASENAME" != "libSDL3_shadercross.so" ]; then
               sudo ln -sf "/usr/lib/x86_64-linux-gnu/$SO_BASENAME" /usr/lib/x86_64-linux-gnu/libSDL3_shadercross.so
@@ -215,7 +213,6 @@ jobs:
             } | sudo tee /usr/lib/x86_64-linux-gnu/pkgconfig/sdl3-shadercross.pc > /dev/null
 
           elif [ "${{ runner.os }}" = "macOS" ]; then
-            # Sécurité : s'assurer que les répertoires cibles existent
             sudo mkdir -p /opt/homebrew/include /opt/homebrew/lib /opt/homebrew/lib/pkgconfig
 
             sudo cp -r shadercross_temp/include/* /opt/homebrew/include/
@@ -238,7 +235,6 @@ jobs:
           curl -L "${{ matrix.shadercross_url }}" -o shadercross_temp/shadercross.zip
           cd shadercross_temp && unzip shadercross.zip && rm shadercross.zip
 
-          # L'archive nightly.link contient un zip imbriqué à extraire
           if ls *.zip >/dev/null 2>&1; then
             unzip -o *.zip
             rm -f *.zip
@@ -248,9 +244,6 @@ jobs:
           find . -maxdepth 2
           echo "-------------------------------------------------"
 
-          # Le zip imbriqué extrait dans un sous-dossier
-          # (ex: SDL3_shadercross-3.0.0-windows-VC-x64/). On aplatit
-          # ce contenu à la racine de shadercross_temp/ s'il existe.
           NESTED_DIR=$(find . -mindepth 1 -maxdepth 1 -type d -name "SDL3_shadercross*" | head -n 1)
           if [ -n "$NESTED_DIR" ]; then
             cp -r "$NESTED_DIR"/* .
@@ -261,7 +254,6 @@ jobs:
           find . -maxdepth 2
           echo "-------------------------------------------------"
 
-          # Nettoyage récursif : on supprime toute SDL3.dll embarquée dans l'archive
           find . -type f -iname "SDL3.dll" -print -delete
 
           cd ..
@@ -283,16 +275,13 @@ jobs:
       #################################################
       # Build
       #################################################
-
       - name: Build (Linux/macOS)
         if: runner.os != 'Windows'
         run: |
-          # Sous macOS, on indique à pkg-config où trouver le .pc de shadercross qu'on a créé
           if [ "${{ runner.os }}" = "macOS" ]; then
             export PKG_CONFIG_PATH="/opt/homebrew/lib/pkgconfig:$PKG_CONFIG_PATH"
           fi
 
-          # On appelle make sans forcer SDL_DIR ni BUILD_DIR pour laisser pkg-config agir
           make build \
             CXX="${{ matrix.cxx }}" \
             EXT="${{ matrix.ext }}" \
@@ -312,7 +301,6 @@ jobs:
       #################################################
       # Package
       #################################################
-
       - name: Package (Linux)
         if: runner.os == 'Linux'
         shell: bash
@@ -320,14 +308,19 @@ jobs:
           mkdir -p dist/Apica-linux
           cp Apica dist/Apica-linux/
 
-          # COPIE DEPUIS /usr/local/lib/ car compilé à la main
+          # COPIE DU DOSSIER APPS DEPUIS BUILD/
+          if [ -d "build/apps" ]; then
+            cp -r build/apps dist/Apica-linux/
+          fi
+
           cp /usr/local/lib/libSDL3*.so* dist/Apica-linux/ 2>/dev/null || true
           cp shadercross_temp/*.so* dist/Apica-linux/ 2>/dev/null || true
 
+          # Correction des syntaxes d'échappement bash
           echo '#!/bin/sh' > dist/Apica-linux/Apica.sh
-          echo 'ORIGIN=$$(dirname "$$(readlink -f "$$0")")' >> dist/Apica-linux/Apica.sh
-          echo 'export LD_LIBRARY_PATH="$$ORIGIN:$$LD_LIBRARY_PATH"' >> dist/Apica-linux/Apica.sh
-          echo 'exec "$$ORIGIN/Apica" "$$@"' >> dist/Apica-linux/Apica.sh
+          echo 'ORIGIN=$(dirname "$(readlink -f "$0")")' >> dist/Apica-linux/Apica.sh
+          echo 'export LD_LIBRARY_PATH="$ORIGIN:$LD_LIBRARY_PATH"' >> dist/Apica-linux/Apica.sh
+          echo 'exec "$ORIGIN/Apica" "$@"' >> dist/Apica-linux/Apica.sh
           chmod +x dist/Apica-linux/Apica.sh
           chmod +x dist/Apica-linux/Apica
 
@@ -341,7 +334,13 @@ jobs:
         run: |
           mkdir -p dist/Apica.app/Contents/MacOS
           mkdir -p dist/Apica.app/Contents/Frameworks
+          mkdir -p dist/Apica.app/Contents/Resources
           cp Apica dist/Apica.app/Contents/MacOS/
+
+          # COPIE DU DOSSIER APPS DEPUIS BUILD/ DANS LES RESSOURCES
+          if [ -d "build/apps" ]; then
+            cp -r build/apps dist/Apica.app/Contents/Resources/
+          fi
 
           cp /opt/homebrew/lib/libSDL3*.dylib dist/Apica.app/Contents/Frameworks/ 2>/dev/null || true
           cp shadercross_temp/*.dylib dist/Apica.app/Contents/Frameworks/ 2>/dev/null || true
@@ -356,6 +355,11 @@ jobs:
         run: |
           mkdir -p dist/Apica-windows
           cp Apica.exe dist/Apica-windows/
+
+          # COPIE DU DOSSIER APPS DEPUIS BUILD/
+          if [ -d "build/apps" ]; then
+            cp -r build/apps dist/Apica-windows/
+          fi
 
           cp /ucrt64/bin/SDL3.dll dist/Apica-windows/
           cp /ucrt64/bin/SDL3_image.dll dist/Apica-windows/
@@ -381,9 +385,7 @@ jobs:
     needs:
       - check-version
       - build
-
     if: needs.check-version.outputs.should_release == 'true'
-
     runs-on: ubuntu-latest
 
     steps:
@@ -398,7 +400,6 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           FILES=$(find artifacts -type f)
-
           gh release create \
             v${{ needs.check-version.outputs.version }} \
             $FILES \

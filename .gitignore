@@ -1,6 +1,8 @@
 temp
 .vscode
 *.exe
-*.apb
+./*.apb
 *.dll
-build
+build/logs
+build/apps/*
+!build/apps/APICA_MAIN
