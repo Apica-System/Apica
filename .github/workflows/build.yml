@@ -178,8 +178,26 @@ jobs:
           cd ..
 
           if [ "${{ runner.os }}" = "Linux" ]; then
+            echo "--- Structure extraite (Linux) ---"
+            find shadercross_temp -maxdepth 2
+            echo "------------------------------------"
+
             sudo cp -r shadercross_temp/include/* /usr/include/
-            sudo cp shadercross_temp/libSDL3_shadercross*.so* /usr/lib/x86_64-linux-gnu/ 2>/dev/null || true
+
+            SO_FILE=$(find shadercross_temp -type f -name "libSDL3_shadercross.so*" | head -n 1)
+            if [ -z "$SO_FILE" ]; then
+              echo "::error::libSDL3_shadercross.so introuvable dans l'archive extraite"
+              exit 1
+            fi
+            sudo cp "$SO_FILE" /usr/lib/x86_64-linux-gnu/
+
+            # S'assurer qu'un symlink non versionné existe pour -lSDL3_shadercross
+            SO_BASENAME=$(basename "$SO_FILE")
+            if [ "$SO_BASENAME" != "libSDL3_shadercross.so" ]; then
+              sudo ln -sf "/usr/lib/x86_64-linux-gnu/$SO_BASENAME" /usr/lib/x86_64-linux-gnu/libSDL3_shadercross.so
+            fi
+
+            sudo ldconfig
             sudo mkdir -p /usr/lib/x86_64-linux-gnu/pkgconfig
 
             {
