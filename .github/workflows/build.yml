@@ -102,7 +102,9 @@ jobs:
             libgl1-mesa-dev \
             libdbus-1-dev \
             libibus-1.0-dev \
-            libudev-dev
+            libudev-dev \
+            libfreetype-dev \
+            libharfbuzz-dev
 
           # Compilation et installation rapide de SDL3
           git clone https://github.com/libsdl-org/SDL.git --depth 1 -b main
