@@ -79,7 +79,30 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt update
-          sudo apt install -y build-essential make pkg-config cmake ninja-build
+          sudo apt install -y \
+            build-essential \
+            make \
+            pkg-config \
+            cmake \
+            ninja-build \
+            libasound2-dev \
+            libpulse-dev \
+            libaudioresource-dev \
+            libx11-dev \
+            libxext-dev \
+            libxrandr-dev \
+            libxcursor-dev \
+            libxfixes-dev \
+            libxi-dev \
+            libxss-dev \
+            libxkbcommon-dev \
+            libwayland-dev \
+            libegl1-mesa-dev \
+            libgles2-mesa-dev \
+            libgl1-mesa-dev \
+            libdbus-1-dev \
+            libibus-1.0-dev \
+            libudev-dev
           
           # Compilation et installation rapide de SDL3
           git clone https://github.com/libsdl-org/SDL.git --depth 1 -b main
@@ -206,7 +229,8 @@ jobs:
           mkdir -p dist/Apica-linux
           cp Apica dist/Apica-linux/
           
-          cp /usr/lib/x86_64-linux-gnu/libSDL3*.so* dist/Apica-linux/ 2>/dev/null || true
+          # COPIE DEPUIS /usr/local/lib/ car compilé à la main
+          cp /usr/local/lib/libSDL3*.so* dist/Apica-linux/ 2>/dev/null || true
           cp shadercross_temp/*.so* dist/Apica-linux/ 2>/dev/null || true
           
           echo '#!/bin/sh' > dist/Apica-linux/Apica.sh
