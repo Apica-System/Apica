@@ -219,7 +219,9 @@ jobs:
           # On appelle make sans forcer SDL_DIR ni BUILD_DIR pour laisser pkg-config agir
           make build \
             CXX="${{ matrix.cxx }}" \
-            EXT="${{ matrix.ext }}"
+            EXT="${{ matrix.ext }}" \
+            SDL_DIR="" \
+            BUILD_DIR=""
 
       - name: Build (Windows)
         if: runner.os == 'Windows'
@@ -240,7 +242,7 @@ jobs:
         shell: bash
         run: |
           mkdir -p dist/Apica-linux
-          cp build/Apica dist/Apica-linux/
+          cp Apica dist/Apica-linux/
           
           # COPIE DEPUIS /usr/local/lib/ car compilé à la main
           cp /usr/local/lib/libSDL3*.so* dist/Apica-linux/ 2>/dev/null || true
@@ -263,7 +265,7 @@ jobs:
         run: |
           mkdir -p dist/Apica.app/Contents/MacOS
           mkdir -p dist/Apica.app/Contents/Frameworks
-          cp build/Apica dist/Apica.app/Contents/MacOS/
+          cp Apica dist/Apica.app/Contents/MacOS/
           
           cp /opt/homebrew/lib/libSDL3*.dylib dist/Apica.app/Contents/Frameworks/ 2>/dev/null || true
           cp shadercross_temp/*.dylib dist/Apica.app/Contents/Frameworks/ 2>/dev/null || true
