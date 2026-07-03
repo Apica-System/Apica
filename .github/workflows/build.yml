@@ -78,16 +78,30 @@ jobs:
       - name: Install dependencies (Linux)
         if: runner.os == 'Linux'
         run: |
-          sudo add-apt-repository ppa:cybermax-dexter/sdl3-backport -y
           sudo apt update
-          sudo apt install -y \
-            build-essential \
-            make \
-            pkg-config \
-            libsdl3-dev \
-            libsdl3-image-dev \
-            libsdl3-mixer-dev \
-            libsdl3-ttf-dev
+          sudo apt install -y build-essential make pkg-config ninja-build cmake greyhound-
+          
+          # Téléchargement et installation de la SDL3 stable/officielle via GitHub Releases
+          # (On prend les fichiers d'installation standards ou on compile rapidement)
+          # Alternative ultra-fiable : compiler la SDL3 en 3 lignes via CMake
+          
+          git clone https://github.com/libsdl-org/SDL.git --depth 1 -b main
+          cd SDL && mkdir build && cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+          sudo cmake --build . --target install
+          cd ../.. && rm -rf SDL
+
+          # Répéter pour SDL_image, SDL_mixer, SDL_ttf si votre projet les utilise activement
+          for repo in SDL_image SDL_mixer SDL_ttf; do
+            git clone https://github.com/libsdl-org/$repo.git --depth 1
+            cd $repo && mkdir build && cd build
+            cmake .. -DCMAKE_BUILD_TYPE=Release
+            sudo cmake --build . --target install
+            cd ../.. && rm -rf $repo
+          done
+          
+          # Mettre à jour les liens des bibliothèques du système
+          sudo ldconfig
 
       #################################################
       # macOS Dependencies
