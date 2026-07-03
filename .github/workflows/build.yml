@@ -103,7 +103,7 @@ jobs:
             libdbus-1-dev \
             libibus-1.0-dev \
             libudev-dev
-          
+
           # Compilation et installation rapide de SDL3
           git clone https://github.com/libsdl-org/SDL.git --depth 1 -b main
           cd SDL && mkdir build && cd build
@@ -119,7 +119,7 @@ jobs:
             sudo cmake --build . --target install
             cd ../.. && rm -rf $repo
           done
-          
+
           # Rafraîchir les liens système pour que le linker trouve les nouvelles .so
           sudo ldconfig
 
@@ -163,28 +163,43 @@ jobs:
           mkdir -p shadercross_temp
           curl -L "${{ matrix.shadercross_url }}" -o shadercross_temp/shadercross.zip
           cd shadercross_temp && unzip shadercross.zip && rm shadercross.zip
-          
+
           # Si c'est l'archive macOS, elle contient un .tar.gz qu'il faut extraire
           if [ -f *.tar.gz ]; then
             tar -xzf *.tar.gz --strip-components=1 2>/dev/null || tar -xzf *.tar.gz
           fi
-          
+
           # Nettoyer les versions de libSDL3 embarquées pour ne garder que shadercross
-          rm -f libSDL3.so* libSDL3.dylib
+          find . -type f \( -name "libSDL3.so*" -o -name "libSDL3.dylib" -o -name "libSDL3.*.dylib" \) -print -delete
           cd ..
-          
+
           if [ "${{ runner.os }}" = "Linux" ]; then
             sudo cp -r shadercross_temp/include/* /usr/include/
             sudo cp shadercross_temp/libSDL3_shadercross*.so* /usr/lib/x86_64-linux-gnu/ 2>/dev/null || true
-            sudo sh -c 'echo -e "Name: sdl3-shadercross\nDescription: Shadercross\nVersion: 3.0.0\nLibs: -lSDL3_shadercross" > /usr/lib/x86_64-linux-gnu/pkgconfig/sdl3-shadercross.pc'
-          
+            sudo mkdir -p /usr/lib/x86_64-linux-gnu/pkgconfig
+
+            {
+              echo "Name: sdl3-shadercross"
+              echo "Description: Shadercross"
+              echo "Version: 3.0.0"
+              echo "Cflags: -I/usr/include"
+              echo "Libs: -L/usr/lib/x86_64-linux-gnu -lSDL3_shadercross"
+            } | sudo tee /usr/lib/x86_64-linux-gnu/pkgconfig/sdl3-shadercross.pc > /dev/null
+
           elif [ "${{ runner.os }}" = "macOS" ]; then
             # Sécurité : s'assurer que les répertoires cibles existent
             sudo mkdir -p /opt/homebrew/include /opt/homebrew/lib /opt/homebrew/lib/pkgconfig
-            
+
             sudo cp -r shadercross_temp/include/* /opt/homebrew/include/
             sudo cp shadercross_temp/lib/libSDL3_shadercross*.dylib /opt/homebrew/lib/ 2>/dev/null || sudo cp shadercross_temp/libSDL3_shadercross*.dylib /opt/homebrew/lib/
-            sudo sh -c 'echo -e "Name: sdl3-shadercross\nDescription: Shadercross\nVersion: 3.0.0\nLibs: -lSDL3_shadercross" > /opt/homebrew/lib/pkgconfig/sdl3-shadercross.pc'
+
+            {
+              echo "Name: sdl3-shadercross"
+              echo "Description: Shadercross"
+              echo "Version: 3.0.0"
+              echo "Cflags: -I/opt/homebrew/include"
+              echo "Libs: -L/opt/homebrew/lib -lSDL3_shadercross"
+            } | sudo tee /opt/homebrew/lib/pkgconfig/sdl3-shadercross.pc > /dev/null
           fi
 
       - name: Fetch and Install SDL_shadercross Nightly (Windows MSYS2)
@@ -194,15 +209,23 @@ jobs:
           mkdir -p shadercross_temp
           curl -L "${{ matrix.shadercross_url }}" -o shadercross_temp/shadercross.zip
           cd shadercross_temp && unzip shadercross.zip && rm shadercross.zip
-          
+
           rm -f bin/SDL3.dll SDL3.dll
           cd ..
-          
+
           cp -r shadercross_temp/include/* /ucrt64/include/
           cp shadercross_temp/lib/SDL3_shadercross.lib /ucrt64/lib/
           cp shadercross_temp/*.dll /ucrt64/bin/ 2>/dev/null || true
           cp shadercross_temp/bin/*.dll /ucrt64/bin/ 2>/dev/null || true
-          echo -e "Name: sdl3-shadercross\nDescription: Shadercross\nVersion: 3.0.0\nLibs: -lSDL3_shadercross" > /ucrt64/lib/pkgconfig/sdl3-shadercross.pc
+
+          mkdir -p /ucrt64/lib/pkgconfig
+          {
+            echo "Name: sdl3-shadercross"
+            echo "Description: Shadercross"
+            echo "Version: 3.0.0"
+            echo "Cflags: -I/ucrt64/include"
+            echo "Libs: -L/ucrt64/lib -lSDL3_shadercross"
+          } > /ucrt64/lib/pkgconfig/sdl3-shadercross.pc
 
       #################################################
       # Build
@@ -243,11 +266,11 @@ jobs:
         run: |
           mkdir -p dist/Apica-linux
           cp Apica dist/Apica-linux/
-          
+
           # COPIE DEPUIS /usr/local/lib/ car compilé à la main
           cp /usr/local/lib/libSDL3*.so* dist/Apica-linux/ 2>/dev/null || true
           cp shadercross_temp/*.so* dist/Apica-linux/ 2>/dev/null || true
-          
+
           echo '#!/bin/sh' > dist/Apica-linux/Apica.sh
           echo 'ORIGIN=$$(dirname "$$(readlink -f "$$0")")' >> dist/Apica-linux/Apica.sh
           echo 'export LD_LIBRARY_PATH="$$ORIGIN:$$LD_LIBRARY_PATH"' >> dist/Apica-linux/Apica.sh
@@ -266,7 +289,7 @@ jobs:
           mkdir -p dist/Apica.app/Contents/MacOS
           mkdir -p dist/Apica.app/Contents/Frameworks
           cp Apica dist/Apica.app/Contents/MacOS/
-          
+
           cp /opt/homebrew/lib/libSDL3*.dylib dist/Apica.app/Contents/Frameworks/ 2>/dev/null || true
           cp shadercross_temp/*.dylib dist/Apica.app/Contents/Frameworks/ 2>/dev/null || true
 
@@ -280,7 +303,7 @@ jobs:
         run: |
           mkdir -p dist/Apica-windows
           cp Apica.exe dist/Apica-windows/
-          
+
           cp /ucrt64/bin/SDL3.dll dist/Apica-windows/
           cp /ucrt64/bin/SDL3_image.dll dist/Apica-windows/
           cp /ucrt64/bin/SDL3_mixer.dll dist/Apica-windows/
@@ -288,7 +311,7 @@ jobs:
           cp /ucrt64/bin/libstdc++-6.dll dist/Apica-windows/
           cp /ucrt64/bin/libgcc_s_ucrt-1.dll dist/Apica-windows/
           cp /ucrt64/bin/libwinpthread-1.dll dist/Apica-windows/
-          
+
           cp shadercross_temp/*.dll dist/Apica-windows/ 2>/dev/null || true
           cp shadercross_temp/bin/*.dll dist/Apica-windows/ 2>/dev/null || true
 
