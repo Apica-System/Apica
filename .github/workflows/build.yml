@@ -43,6 +43,7 @@ jobs:
 
   build:
     needs: check-version
+    if: needs.check-version.outputs.should_release == 'true'
 
     strategy:
       matrix:
@@ -376,7 +377,7 @@ jobs:
       - check-version
       - build
 
-    if: github.event_name == 'push' && needs.check-version.outputs.should_release == 'true'
+    if: needs.check-version.outputs.should_release == 'true'
 
     runs-on: ubuntu-latest
 
