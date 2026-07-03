@@ -163,16 +163,37 @@ jobs:
         shell: bash
         run: |
           mkdir -p shadercross_temp
-          curl -L "${{ matrix.shadercross_url }}" -o shadercross_temp/shadercross.zip
-          cd shadercross_temp && unzip shadercross.zip && rm shadercross.zip
+          cd shadercross_temp
+
+          # Téléchargement avec retry : nightly.link peut renvoyer
+          # une réponse invalide de façon transitoire
+          for attempt in 1 2 3 4 5; do
+            curl -L --fail "${{ matrix.shadercross_url }}" -o shadercross.zip
+            SIZE=$(stat -c%s shadercross.zip 2>/dev/null || stat -f%z shadercross.zip)
+            if unzip -tq shadercross.zip >/dev/null 2>&1; then
+              echo "Téléchargement valide (taille: $SIZE octets)"
+              break
+            fi
+            echo "Tentative $attempt échouée (taille: $SIZE octets), fichier invalide. Nouvelle tentative..."
+            rm -f shadercross.zip
+            sleep 5
+            if [ "$attempt" = "5" ]; then
+              echo "::error::Impossible de télécharger une archive shadercross valide après 5 tentatives"
+              exit 1
+            fi
+          done
+
+          unzip shadercross.zip && rm shadercross.zip
 
           # Si c'est l'archive macOS, elle contient un .tar.gz qu'il faut extraire
           if [ -f *.tar.gz ]; then
             tar -xzf *.tar.gz --strip-components=1 2>/dev/null || tar -xzf *.tar.gz
           fi
 
-          # Nettoyer les versions de libSDL3 embarquées pour ne garder que shadercross
+          # Nettoyage récursif : on supprime toute libSDL3 embarquée,
+          # peu importe le sous-dossier où l'archive shadercross l'a placée
           find . -type f \( -name "libSDL3.so*" -o -name "libSDL3.dylib" -o -name "libSDL3.*.dylib" \) -print -delete
+
           cd ..
 
           if [ "${{ runner.os }}" = "Linux" ]; then
