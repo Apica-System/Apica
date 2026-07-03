@@ -211,23 +211,27 @@ jobs:
       - name: Build (Linux/macOS)
         if: runner.os != 'Windows'
         run: |
-          # Si on est sur macOS, on force Clang à inclure les dossiers de Homebrew et de /usr/local
+          # Configuration des chemins globaux pour le compilateur
           if [ "${{ runner.os }}" = "macOS" ]; then
             export CPATH="/opt/homebrew/include:/usr/local/include:$CPATH"
             export LIBRARY_PATH="/opt/homebrew/lib:/usr/local/lib:$LIBRARY_PATH"
-          fi
-          
-          # Si on est sur Linux, on s'assure aussi que /usr/local/include est vu
-          if [ "${{ runner.os }}" = "Linux" ]; then
+          else
             export CPATH="/usr/local/include:$CPATH"
             export LIBRARY_PATH="/usr/local/lib:$LIBRARY_PATH"
           fi
+
+          # On force l'injection des options du linker dans l'environnement de make
+          # Les drapeaux lient SDL3, SDL3_image, SDL3_mixer, SDL3_ttf et SDL3_shadercross
+          export LDLIBS="-lSDL3 -lSDL3_image -lSDL3_mixer -lSDL3_ttf -lSDL3_shadercross"
+          export LDFLAGS="-lSDL3 -lSDL3_image -lSDL3_mixer -lSDL3_ttf -lSDL3_shadercross"
 
           make build \
             CXX="${{ matrix.cxx }}" \
             EXT="${{ matrix.ext }}" \
             SDL_DIR="" \
-            BUILD_DIR=""
+            BUILD_DIR="" \
+            LDLIBS="$LDLIBS" \
+            LDFLAGS="$LDFLAGS"
 
       - name: Build (Windows)
         if: runner.os == 'Windows'
