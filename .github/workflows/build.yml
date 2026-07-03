@@ -356,7 +356,7 @@ jobs:
           cp /ucrt64/bin/SDL3_mixer.dll dist/Apica-windows/
           cp /ucrt64/bin/SDL3_ttf.dll dist/Apica-windows/
           cp /ucrt64/bin/libstdc++-6.dll dist/Apica-windows/
-          cp /ucrt64/bin/libgcc_s_ucrt-1.dll dist/Apica-windows/
+          cp /ucrt64/bin/libgcc_s_seh-1.dll dist/Apica-windows/
           cp /ucrt64/bin/libwinpthread-1.dll dist/Apica-windows/
 
           cp shadercross_temp/*.dll dist/Apica-windows/ 2>/dev/null || true
