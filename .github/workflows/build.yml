@@ -23,7 +23,12 @@ jobs:
       - name: Read version
         id: version
         run: |
-          VERSION=$(grep '^#define VERSION' inc/utils/constants.hpp | sed -E 's/^#define VERSION "([^"]+)"/\1/')
+          VERSION=$(grep -oP '#define\s+VERSION\s+"\K[^"]+' inc/utils/constants.hpp)
+          if [ -z "$VERSION" ]; then
+            echo "::error::Impossible d'extraire VERSION depuis inc/utils/constants.hpp"
+            exit 1
+          fi
+          echo "Version détectée : $VERSION"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Compare with latest release
