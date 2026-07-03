@@ -79,28 +79,25 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt update
-          sudo apt install -y build-essential make pkg-config ninja-build cmake greyhound-
+          sudo apt install -y build-essential make pkg-config cmake ninja-build
           
-          # Téléchargement et installation de la SDL3 stable/officielle via GitHub Releases
-          # (On prend les fichiers d'installation standards ou on compile rapidement)
-          # Alternative ultra-fiable : compiler la SDL3 en 3 lignes via CMake
-          
+          # Compilation et installation rapide de SDL3
           git clone https://github.com/libsdl-org/SDL.git --depth 1 -b main
           cd SDL && mkdir build && cd build
-          cmake .. -DCMAKE_BUILD_TYPE=Release
+          cmake .. -GNinja -DCMAKE_BUILD_TYPE=Release
           sudo cmake --build . --target install
           cd ../.. && rm -rf SDL
 
-          # Répéter pour SDL_image, SDL_mixer, SDL_ttf si votre projet les utilise activement
+          # Compilation et installation des extensions nécessaires
           for repo in SDL_image SDL_mixer SDL_ttf; do
             git clone https://github.com/libsdl-org/$repo.git --depth 1
             cd $repo && mkdir build && cd build
-            cmake .. -DCMAKE_BUILD_TYPE=Release
+            cmake .. -GNinja -DCMAKE_BUILD_TYPE=Release
             sudo cmake --build . --target install
             cd ../.. && rm -rf $repo
           done
           
-          # Mettre à jour les liens des bibliothèques du système
+          # Rafraîchir les liens système pour que le linker trouve les nouvelles .so
           sudo ldconfig
 
       #################################################
