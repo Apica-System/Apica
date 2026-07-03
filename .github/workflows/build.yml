@@ -211,27 +211,15 @@ jobs:
       - name: Build (Linux/macOS)
         if: runner.os != 'Windows'
         run: |
-          # Configuration des chemins globaux pour le compilateur
+          # Sous macOS, on indique à pkg-config où trouver le .pc de shadercross qu'on a créé
           if [ "${{ runner.os }}" = "macOS" ]; then
-            export CPATH="/opt/homebrew/include:/usr/local/include:$CPATH"
-            export LIBRARY_PATH="/opt/homebrew/lib:/usr/local/lib:$LIBRARY_PATH"
-          else
-            export CPATH="/usr/local/include:$CPATH"
-            export LIBRARY_PATH="/usr/local/lib:$LIBRARY_PATH"
+            export PKG_CONFIG_PATH="/opt/homebrew/lib/pkgconfig:$PKG_CONFIG_PATH"
           fi
 
-          # On force l'injection des options du linker dans l'environnement de make
-          # Les drapeaux lient SDL3, SDL3_image, SDL3_mixer, SDL3_ttf et SDL3_shadercross
-          export LDLIBS="-lSDL3 -lSDL3_image -lSDL3_mixer -lSDL3_ttf -lSDL3_shadercross"
-          export LDFLAGS="-lSDL3 -lSDL3_image -lSDL3_mixer -lSDL3_ttf -lSDL3_shadercross"
-
+          # On appelle make sans forcer SDL_DIR ni BUILD_DIR pour laisser pkg-config agir
           make build \
             CXX="${{ matrix.cxx }}" \
-            EXT="${{ matrix.ext }}" \
-            SDL_DIR="" \
-            BUILD_DIR="" \
-            LDLIBS="$LDLIBS" \
-            LDFLAGS="$LDFLAGS"
+            EXT="${{ matrix.ext }}"
 
       - name: Build (Windows)
         if: runner.os == 'Windows'
@@ -252,7 +240,7 @@ jobs:
         shell: bash
         run: |
           mkdir -p dist/Apica-linux
-          cp Apica dist/Apica-linux/
+          cp build/Apica dist/Apica-linux/
           
           # COPIE DEPUIS /usr/local/lib/ car compilé à la main
           cp /usr/local/lib/libSDL3*.so* dist/Apica-linux/ 2>/dev/null || true
@@ -275,7 +263,7 @@ jobs:
         run: |
           mkdir -p dist/Apica.app/Contents/MacOS
           mkdir -p dist/Apica.app/Contents/Frameworks
-          cp Apica dist/Apica.app/Contents/MacOS/
+          cp build/Apica dist/Apica.app/Contents/MacOS/
           
           cp /opt/homebrew/lib/libSDL3*.dylib dist/Apica.app/Contents/Frameworks/ 2>/dev/null || true
           cp shadercross_temp/*.dylib dist/Apica.app/Contents/Frameworks/ 2>/dev/null || true
