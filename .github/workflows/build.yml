@@ -59,13 +59,13 @@ jobs:
             artifact: Apica-linux.tar.gz
             shadercross_url: "https://nightly.link/libsdl-org/SDL_shadercross/workflows/main/main/SDL3_shadercross-linux-x64.zip"
 
-          - os: macos-latest
+          - os: macos-15
             cxx: clang++
             ext: ""
             artifact: Apica-macos.zip
             shadercross_url: "https://nightly.link/libsdl-org/SDL_shadercross/workflows/main/main/SDL3_shadercross-macos-arm64.zip"
 
-          - os: windows-latest
+          - os: windows-2022
             cxx: g++
             ext: .exe
             artifact: Apica-windows.zip
@@ -386,7 +386,7 @@ jobs:
       - check-version
       - build
     if: needs.check-version.outputs.should_release == 'true'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
 
     steps:
       - uses: actions/checkout@v4
