@@ -14,6 +14,7 @@ namespace systems {
         static LoggerSystem &getInstance();
 
         void createLogFileFor(const std::string &app_name);
+        void closeLogFile();
         void systemLognError(const std::string &message) const;
         void systemLognSuccess(const std::string &message) const;
 

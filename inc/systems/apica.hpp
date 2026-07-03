@@ -4,6 +4,7 @@
 #include "elements.hpp"
 
 #include <string>
+#include <vector>
 #include <SDL3/SDL.h>
 
 namespace systems {
@@ -11,10 +12,11 @@ namespace systems {
     public:
         static ApicaSystem &getInstance();
 
-        common::elements::Element *quitApp();
+        common::elements::Element *quitApp(const std::vector<common::elements::Element*> &parameters);
+        common::elements::Element *loadApp(const std::vector<common::elements::Element*> &parameters);
+        
         void forceQuitApp();
-
-        void loadApp(const std::string &name);
+        void systemLoadApp(const std::string &name);
         
         utils::ApicaMode getMode();
         void setQuitFinished();
@@ -25,6 +27,7 @@ namespace systems {
         utils::ApicaRight right;
         utils::ApicaMode mode;
         SDL_Thread *evaluator_thread;
+        std::optional<std::string> next_app;
 
         ApicaSystem();
 

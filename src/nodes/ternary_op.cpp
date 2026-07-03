@@ -15,10 +15,6 @@ NodeTernaryOperation::~NodeTernaryOperation() {
     if (this->false_expression) delete this->false_expression;
 }
 
-NodeKind NodeTernaryOperation::getKind() const {
-    return NodeKind::TernaryOperation;
-}
-
 common::elements::Element *NodeTernaryOperation::evaluate(uint8_t modifier) {
     common::elements::Element *condition = this->condition->evaluate(VM::EvaluatorModifier::EM_None);
     condition->checkAndConvert(common::bytecodes::ApicaTypeBytecode::Bool);

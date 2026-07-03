@@ -4,14 +4,18 @@
 #include "VM/evaluator.hpp"
 
 #include "utils/errors.hpp"
+#include "utils/constants.hpp"
+#include "utils/errors_func_call.hpp"
+
 #include "values/u64.hpp"
 #include "values/null.hpp"
-#include "utils/constants.hpp"
+#include "values/string.hpp"
 
 using namespace systems;
 
 ApicaSystem::ApicaSystem()
-    : right(utils::ApicaRight::APR_MAIN_MENU), mode(utils::ApicaMode::APM_Init), evaluator_thread(nullptr) {
+    : right(utils::ApicaRight::APR_MAIN_MENU), mode(utils::ApicaMode::APM_Init), 
+    evaluator_thread(nullptr), next_app(std::nullopt) {
 
 }
 
@@ -24,21 +28,57 @@ bool ApicaSystem::isRunning() const {
     return this->mode != utils::ApicaMode::APM_SpecialQuit;
 }
 
-common::elements::Element *ApicaSystem::quitApp() {
+common::elements::Element *ApicaSystem::quitApp(const std::vector<common::elements::Element*> &parameters) {
+    std::optional<common::elements::Element*> error = utils::noArgumentExpected(parameters);
+    if (error)
+        return error.value();
+
     if (this->right & utils::ApicaRight::APR_AppRight)
         this->mode = utils::ApicaMode::APM_Quit;
     
     return new common::elements::Element(
-        common::elements::ElementModifier::None,
+        common::elements::ElementModifier::Terminate,
+        new common::values::ValueNull()
+    );
+}
+
+common::elements::Element *ApicaSystem::loadApp(const std::vector<common::elements::Element*> &parameters) {
+    if (!(this->right & utils::ApicaRight::APR_AppRight))
+        return utils::forbidden();
+    
+    if (parameters.size() == 0)
+        return utils::tooFewArguments(0, 1);
+    else if (parameters.size() > 1)
+        return utils::tooManyArguments(parameters.size(), 1);
+    
+    common::elements::Element *param = parameters[0]->autoConvert(common::bytecodes::ApicaTypeBytecode::String);
+    if (param->isErrorOrController())
+        return param;
+    
+    common::values::ValueString *name_val = static_cast<common::values::ValueString*>(param->getValue());
+    std::optional<common::elements::Element*> error = utils::shouldNotBeNull(param, "path");
+    if (error) {
+        delete param;
+        return error.value();
+    }
+    
+    LoggerSystem::getInstance().systemLognSuccess("Closed to load a new application");
+    this->next_app = name_val->getValue().value();
+    delete param;
+
+    this->mode = utils::ApicaMode::APM_Quit;
+    return new common::elements::Element(
+        common::elements::ElementModifier::Terminate,
         new common::values::ValueNull()
     );
 }
 
 void ApicaSystem::forceQuitApp() {
+    LoggerSystem::getInstance().systemLognError(std::string(utils::APC_ERROR_FORCE_QUIT));
     this->mode = utils::ApicaMode::APM_QuitFinished;
 }
 
-void ApicaSystem::loadApp(const std::string &name) {
+void ApicaSystem::systemLoadApp(const std::string &name) {
     if (!(this->right & utils::ApicaRight::APR_AppRight))
         return;
     
@@ -82,12 +122,19 @@ void ApicaSystem::update() {
         SDL_WaitThread(this->evaluator_thread, &result);
         this->evaluator_thread = nullptr;
 
-        if (this->right & utils::ApicaRight::APR_MainMenuRight) {
-            this->mode = utils::ApicaMode::APM_SpecialQuit;
-        } else {
-            this->right = utils::ApicaRight::APR_MAIN_MENU;
+        if (this->next_app) {
+            this->right = utils::ApicaRight::APR_APP;
             this->mode = utils::ApicaMode::APM_Init;
-            this->loadApp(utils::MAIN_MENU_NAME);
+            this->systemLoadApp(this->next_app.value());
+            this->next_app = std::nullopt;
+        } else {
+            if (this->right & utils::ApicaRight::APR_MainMenuRight) {
+                this->mode = utils::ApicaMode::APM_SpecialQuit;
+            } else {
+                this->right = utils::ApicaRight::APR_MAIN_MENU;
+                this->mode = utils::ApicaMode::APM_Init;
+                this->systemLoadApp(utils::MAIN_MENU_NAME);
+            }
         }
     }
 }

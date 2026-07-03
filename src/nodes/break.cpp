@@ -7,10 +7,6 @@ NodeBreak::NodeBreak() {
 
 }
 
-NodeKind NodeBreak::getKind() const {
-    return NodeKind::Break;
-}
-
 common::elements::Element *NodeBreak::evaluate(uint8_t) {
     return new common::elements::Element(
         common::elements::ElementModifier::Break,

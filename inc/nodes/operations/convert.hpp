@@ -8,7 +8,6 @@ namespace nodes {
         NodeConvert(Node *left, common::bytecodes::ApicaTypeBytecode right);
         ~NodeConvert();
 
-        NodeKind getKind() const override;
         common::elements::Element *evaluate(uint8_t modifier) override;
     
     #ifdef __APICA_DEBUG__

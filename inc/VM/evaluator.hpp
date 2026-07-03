@@ -33,6 +33,8 @@ namespace VM {
         bool evaluate(common::bytecodes::ApicaEntrypointBytecode entry_bytecode);
         void clear();
 
+        void applySpecs(const std::string &app_name);
+
         VMEvaluator(VMEvaluator&) = delete;
         void operator=(const VMEvaluator&) = delete;
     };

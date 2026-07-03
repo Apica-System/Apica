@@ -9,14 +9,14 @@
 #include "utils/constants.hpp"
 
 SDL_AppResult SDL_AppInit(void**, int, char**) {
-    systems::ApicaSystem::getInstance().loadApp(utils::MAIN_MENU_NAME);
+    systems::ApicaSystem::getInstance().systemLoadApp(utils::MAIN_MENU_NAME);
     return SDL_APP_CONTINUE;
 }
 
 SDL_AppResult SDL_AppEvent(void*, SDL_Event *event) {
     if (event->type == SDL_EVENT_QUIT)
         systems::ApicaSystem::getInstance().forceQuitApp();
-    else if (event->type == SDL_EVENT_KEY_DOWN && event->key.scancode == SDL_SCANCODE_ESCAPE && (event->key.mod & SDL_KMOD_CTRL))
+    else if (event->type == SDL_EVENT_KEY_DOWN && event->key.scancode == SDL_SCANCODE_E && (event->key.mod & (SDL_KMOD_CAPS | SDL_KMOD_CTRL)))
         systems::ApicaSystem::getInstance().forceQuitApp();
 
     systems::EventsSystem::getInstance().handleEvent(event);

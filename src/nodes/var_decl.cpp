@@ -13,10 +13,6 @@ NodeVarDeclaration::~NodeVarDeclaration() {
     if (this->expression) delete this->expression;
 }
 
-NodeKind NodeVarDeclaration::getKind() const {
-    return NodeKind::VarDeclaration;
-}
-
 common::elements::Element *NodeVarDeclaration::evaluate(uint8_t) {
     common::elements::Element *result = this->expression->evaluate(VM::EvaluatorModifier::EM_CopyCall);
     result->checkAndConvert(this->value_type);

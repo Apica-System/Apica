@@ -9,10 +9,6 @@ NodeVarConstCall::NodeVarConstCall(uint64_t id)
 
 }
 
-NodeKind NodeVarConstCall::getKind() const {
-    return NodeKind::VarConstCall;
-}
-
 common::elements::Element *NodeVarConstCall::evaluate(uint8_t modifier) {
     std::optional<common::elements::Element*> element = VM::VMEvaluator::getInstance().getElement(this->id);
     if (!element) {

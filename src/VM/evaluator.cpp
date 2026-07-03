@@ -9,7 +9,10 @@
 #include "utils/errors.hpp"
 
 #include "values/error.hpp"
+#include "values/u32.hpp"
 #include "values/u64.hpp"
+#include "values/string.hpp"
+#include "values/bool.hpp"
 
 using namespace VM;
 
@@ -39,14 +42,9 @@ bool VMEvaluator::readApp(const std::string &app_name) {
     }
     
     common::values::ValueU64 *count = static_cast<common::values::ValueU64*>(id_count.value());
-    if (!count) {
-        systems::LoggerSystem::getInstance().systemLognError(std::string(utils::EVL_ERROR_NO_ID_COUNT));
-        return false;
-    }
-    
     this->elements.resize(count->getValue().value_or(0));
 
-    systems::WindowSystem::getInstance().systemSetInfos("Apica Main Menu", 1080, 720);
+    this->applySpecs(app_name);
     return true;
 }
 
@@ -85,6 +83,7 @@ int SDLCALL VMEvaluator::loop(void*) {
         }
     }
 
+    systems::EventsSystem::getInstance().handleNewTick();
     return 0;
 }
 
@@ -101,7 +100,6 @@ void VMEvaluator::setElement(uint64_t id, common::elements::Element *element) {
     if (this->elements[id])
         delete this->elements[id];
     
-    std::cout << "Element " << id << " set\n";
     this->elements[id] = element;
 }
 
@@ -122,8 +120,11 @@ std::optional<common::elements::Element*> VMEvaluator::getElement(uint64_t id) {
 
 void VMEvaluator::clear() {
     for (common::elements::Element *element : this->elements) {
-        if (element) delete element;
+        if (element)
+            delete element;
     }
+
+    this->elements.clear();
 }
 
 bool VMEvaluator::evaluate(common::bytecodes::ApicaEntrypointBytecode entry_bytecode) {
@@ -146,14 +147,13 @@ bool VMEvaluator::evaluate(common::bytecodes::ApicaEntrypointBytecode entry_byte
         switch (result->getModifier()) {
             case common::elements::ElementModifier::Error: {
                 common::values::ValueError *error = static_cast<common::values::ValueError*>(result->getValue());
-                std::optional<std::string> details = error->getDetails();
-                std::string error_message(error->getName().value());
-                if (details) {
-                    error_message += ": ";
-                    error_message += details.value();
-                }
-
-                systems::LoggerSystem::getInstance().systemLognError(error_message);
+                std::string trace("In entrypoint `");
+                if (entry_bytecode == common::bytecodes::ApicaEntrypointBytecode::Init) trace += "init`";
+                else if (entry_bytecode == common::bytecodes::ApicaEntrypointBytecode::Update) trace += "update`";
+                else trace += "quit`";
+                
+                error->addTrace(trace);
+                systems::LoggerSystem::getInstance().systemLognError(error->getErrorMessage());
             } break;
 
             case common::elements::ElementModifier::Break:
@@ -174,4 +174,36 @@ bool VMEvaluator::evaluate(common::bytecodes::ApicaEntrypointBytecode entry_byte
 
     delete result;
     return true;
+}
+
+void VMEvaluator::applySpecs(const std::string &app_name) {
+    std::optional<common::values::Value*> spec = this->reader.getSpecification(common::bytecodes::ApicaSpecificationBytecode::Title);
+    std::string title;
+    if (spec) {
+        common::values::ValueString *title_spec_val = static_cast<common::values::ValueString*>(spec.value());
+        title = title_spec_val->getValue().value();
+    } else title = app_name;
+
+    int w = 0, h = 0;
+    spec = this->reader.getSpecification(common::bytecodes::ApicaSpecificationBytecode::WindowWidth);
+    if (spec) {
+        common::values::ValueU32 *width_spec_val = static_cast<common::values::ValueU32*>(spec.value());
+        w = width_spec_val->getValue().value();
+    }
+
+    spec = this->reader.getSpecification(common::bytecodes::ApicaSpecificationBytecode::WindowHeight);
+    if (spec) {
+        common::values::ValueU32 *height_spec_val = static_cast<common::values::ValueU32*>(spec.value());
+        h = height_spec_val->getValue().value();
+    }
+
+    systems::WindowSystem::getInstance().systemSetInfos(title, w, h);
+
+
+    spec = this->reader.getSpecification(common::bytecodes::ApicaSpecificationBytecode::LoggerActivation);
+    if (spec) {
+        common::values::ValueBool *logger_state = static_cast<common::values::ValueBool*>(spec.value());
+        if (!logger_state->getValue().value())
+            systems::LoggerSystem::getInstance().closeLogFile();
+    }
 }

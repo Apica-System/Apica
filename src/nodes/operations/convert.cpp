@@ -11,10 +11,6 @@ NodeConvert::~NodeConvert() {
     if (this->left) delete this->left;
 }
 
-NodeKind NodeConvert::getKind() const {
-    return NodeKind::Convert;
-}
-
 common::elements::Element *NodeConvert::evaluate(uint8_t modifier) {
     common::elements::Element *left = this->left->evaluate(modifier);
     if (left->isErrorOrController())

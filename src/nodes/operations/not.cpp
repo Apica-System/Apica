@@ -11,10 +11,6 @@ NodeNot::~NodeNot() {
     if (this->operand) delete this->operand;
 }
 
-NodeKind NodeNot::getKind() const {
-    return NodeKind::Not;
-}
-
 common::elements::Element *NodeNot::evaluate(uint8_t modifier) {
     common::elements::Element *operand = this->operand->evaluate(modifier);
     if (operand->isErrorOrController())

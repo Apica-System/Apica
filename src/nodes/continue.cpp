@@ -7,10 +7,6 @@ NodeContinue::NodeContinue() {
 
 }
 
-NodeKind NodeContinue::getKind() const {
-    return NodeKind::Continue;
-}
-
 common::elements::Element *NodeContinue::evaluate(uint8_t) {
     return new common::elements::Element(
         common::elements::ElementModifier::Continue,

@@ -14,10 +14,6 @@ NodeCompound::~NodeCompound() {
     }
 }
 
-NodeKind NodeCompound::getKind() const {
-    return NodeKind::Compound;
-}
-
 common::elements::Element *NodeCompound::evaluate(uint8_t modifier) {
     for (nodes::Node *node : this->nodes) {
         common::elements::Element *result = node->evaluate(modifier);

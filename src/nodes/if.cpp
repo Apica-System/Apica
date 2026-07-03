@@ -15,10 +15,6 @@ NodeIf::~NodeIf() {
     if (this->body) delete this->body;
 }
 
-NodeKind NodeIf::getKind() const {
-    return NodeKind::If;
-}
-
 common::elements::Element *NodeIf::evaluate(uint8_t modifier) {
     common::elements::Element *condition = this->condition->evaluate(VM::EvaluatorModifier::EM_None);
     condition->checkAndConvert(common::bytecodes::ApicaTypeBytecode::Bool);

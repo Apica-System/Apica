@@ -1,18 +1,18 @@
-#include "nodes/operations/subtract.hpp"
+#include "nodes/operations/less_equals.hpp"
 
 using namespace nodes;
 
-NodeSubtract::NodeSubtract(Node *left, Node *right)
+NodeLessEquals::NodeLessEquals(Node *left, Node *right)
     : left(left), right(right) {
 
 }
 
-NodeSubtract::~NodeSubtract() {
+NodeLessEquals::~NodeLessEquals() {
     if (this->left) delete this->left;
     if (this->right) delete this->right;
 }
 
-common::elements::Element *NodeSubtract::evaluate(uint8_t modifier) {
+common::elements::Element *NodeLessEquals::evaluate(uint8_t modifier) {
     common::elements::Element *left = this->left->evaluate(modifier);
     if (left->isErrorOrController())
         return left;
@@ -23,7 +23,7 @@ common::elements::Element *NodeSubtract::evaluate(uint8_t modifier) {
         return right;
     }
     
-    common::elements::Element *result = left->subtract(right);
+    common::elements::Element *result = left->lessOrEquals(right);
     delete left;
     delete right;
 
@@ -31,8 +31,8 @@ common::elements::Element *NodeSubtract::evaluate(uint8_t modifier) {
 }
 
 #ifdef __APICA_DEBUG__
-void NodeSubtract::show(std::string &indent) const {
-    std::cout << indent << "NodeSubtract()\n";
+void NodeLessEquals::show(std::string &indent) const {
+    std::cout << indent << "NodeLessEquals()\n";
 
     indent.push_back(' ');
     indent.push_back(' ');

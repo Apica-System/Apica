@@ -3,16 +3,18 @@
 #include "nodes/node.hpp"
 
 namespace nodes {
-    class NodeVarConstCall final : public Node {
+    class NodeGreater final : public Node {
     public:
-        NodeVarConstCall(uint64_t id);
+        NodeGreater(Node *left, Node *right);
+        ~NodeGreater();
 
         common::elements::Element *evaluate(uint8_t modifier) override;
-    
+            
     #ifdef __APICA_DEBUG__
         void show(std::string &indent) const override;
     #endif
     private:
-        uint64_t id;
+        Node *left;
+        Node *right;
     };
 }

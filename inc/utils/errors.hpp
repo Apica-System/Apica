@@ -3,6 +3,10 @@
 #include <string_view>
 
 namespace utils {
+    // Apica's errors
+    inline constexpr std::string_view APC_ERROR_FORCE_QUIT = "The app was forced to close";
+
+
     // Reader's errors
     inline constexpr std::string_view RDR_ERROR_INCORRECT_APB_FILE = "Failed to find or open APB file named -> ";
     inline constexpr std::string_view RDR_ERROR_READ_U8 = "Failed to read a 8-bit word";

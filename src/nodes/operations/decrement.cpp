@@ -13,10 +13,6 @@ NodeDecrement::~NodeDecrement() {
     if (this->operand) delete this->operand;
 }
 
-NodeKind NodeDecrement::getKind() const {
-    return NodeKind::Decrement;
-}
-
 common::elements::Element *NodeDecrement::evaluate(uint8_t modifier) {
     common::elements::Element *operand = this->operand->evaluate(modifier & ~VM::EvaluatorModifier::EM_CopyCall);
     if (operand->isErrorOrController())

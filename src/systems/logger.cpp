@@ -47,6 +47,15 @@ void LoggerSystem::createLogFileFor(const std::string &app_name) {
         this->log_file = file;
 }
 
+void LoggerSystem::closeLogFile() {
+    std::lock_guard<std::mutex> lock(this->logger_mutex);
+    if (this->log_file) {
+        fprintf(this->log_file.value(), "\x1b[37mThe app closes the log file\x1b[0m\n");
+        fclose(this->log_file.value());
+        this->log_file = std::nullopt;
+    }
+}
+
 void LoggerSystem::systemLognError(const std::string &message) const {
     std::lock_guard<std::mutex> lock(this->logger_mutex);
     if (this->log_file)

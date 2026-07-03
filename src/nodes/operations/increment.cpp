@@ -13,10 +13,6 @@ NodeIncrement::~NodeIncrement() {
     if (this->operand) delete this->operand;
 }
 
-NodeKind NodeIncrement::getKind() const {
-    return NodeKind::Increment;
-}
-
 common::elements::Element *NodeIncrement::evaluate(uint8_t modifier) {
     common::elements::Element *operand = this->operand->evaluate(modifier & ~VM::EvaluatorModifier::EM_CopyCall);
     if (operand->isErrorOrController())

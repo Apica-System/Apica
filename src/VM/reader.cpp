@@ -17,14 +17,19 @@
 #include "nodes/var_const_call.hpp"
 #include "nodes/var_decl.hpp"
 #include "nodes/const_decl.hpp"
+#include "nodes/if.hpp"
+#include "nodes/if_else.hpp"
+#include "nodes/while.hpp"
+
 #include "nodes/operations/add.hpp"
 #include "nodes/operations/subtract.hpp"
 #include "nodes/operations/increment.hpp"
 #include "nodes/operations/decrement.hpp"
 #include "nodes/operations/not.hpp"
-#include "nodes/if.hpp"
-#include "nodes/if_else.hpp"
-#include "nodes/while.hpp"
+#include "nodes/operations/less.hpp"
+#include "nodes/operations/less_equals.hpp"
+#include "nodes/operations/greater.hpp"
+#include "nodes/operations/greater_equals.hpp"
 
 using namespace VM;
 
@@ -225,6 +230,8 @@ std::optional<nodes::Node*> VMReader::readNode(FILE *file, common::bytecodes::Ap
         case common::bytecodes::ApicaBytecode::ConstDecl: return this->readVarConstDecl(file, true);
         
         case common::bytecodes::ApicaBytecode::Add: case common::bytecodes::ApicaBytecode::Subtract:
+        case common::bytecodes::ApicaBytecode::LessThan: case common::bytecodes::ApicaBytecode::LessOrEquals:
+        case common::bytecodes::ApicaBytecode::GreaterThan: case common::bytecodes::ApicaBytecode::GreaterOrEquals:
             return this->readBinary(file, bytecode);
 
         case common::bytecodes::ApicaBytecode::Increment: case common::bytecodes::ApicaBytecode::Decrement:
@@ -394,6 +401,18 @@ std::optional<nodes::Node*> VMReader::readBinary(FILE *file, common::bytecodes::
         
         case common::bytecodes::ApicaBytecode::Subtract:
             return new nodes::NodeSubtract(left.value(), right.value());
+        
+        case common::bytecodes::ApicaBytecode::LessThan:
+            return new nodes::NodeLess(left.value(), right.value());
+        
+        case common::bytecodes::ApicaBytecode::LessOrEquals:
+            return new nodes::NodeLessEquals(left.value(), right.value());
+        
+        case common::bytecodes::ApicaBytecode::GreaterThan:
+            return new nodes::NodeGreater(left.value(), right.value());
+        
+        case common::bytecodes::ApicaBytecode::GreaterOrEquals:
+            return new nodes::NodeGreaterEquals(left.value(), right.value());
 
         default: {
             delete left.value();

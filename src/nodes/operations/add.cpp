@@ -12,10 +12,6 @@ NodeAdd::~NodeAdd() {
     if (this->right) delete this->right;
 }
 
-NodeKind NodeAdd::getKind() const {
-    return NodeKind::Add;
-}
-
 common::elements::Element *NodeAdd::evaluate(uint8_t modifier) {
     common::elements::Element *left = this->left->evaluate(modifier);
     if (left->isErrorOrController())

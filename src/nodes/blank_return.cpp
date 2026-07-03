@@ -7,10 +7,6 @@ NodeBlankReturn::NodeBlankReturn() {
 
 }
 
-NodeKind NodeBlankReturn::getKind() const {
-    return NodeKind::BlankReturn;
-}
-
 common::elements::Element *NodeBlankReturn::evaluate(uint8_t) {
     return new common::elements::Element(
         common::elements::ElementModifier::Return,

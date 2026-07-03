@@ -7,7 +7,6 @@ namespace nodes {
     public:
         NodeBreak();
 
-        NodeKind getKind() const override;
         common::elements::Element *evaluate(uint8_t modifier) override;
 
     #ifdef __APICA_DEBUG__

@@ -8,7 +8,6 @@ namespace nodes {
         NodeAdd(Node *left, Node *right);
         ~NodeAdd();
 
-        NodeKind getKind() const override;
         common::elements::Element *evaluate(uint8_t modifier) override;
             
     #ifdef __APICA_DEBUG__

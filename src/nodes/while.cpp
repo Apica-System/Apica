@@ -7,7 +7,6 @@ using namespace nodes;
 
 NodeWhile::NodeWhile(Node *condition, Node *body)
     : condition(condition), body(body) {
-
 }
 
 NodeWhile::~NodeWhile() {
@@ -15,48 +14,56 @@ NodeWhile::~NodeWhile() {
     if (this->body) delete this->body;
 }
 
-NodeKind NodeWhile::getKind() const {
-    return NodeKind::While;
-}
-
-void recalculateCondition(common::elements::Element *&condition, common::elements::Element *body_result, nodes::Node *condition_node) {
-    delete body_result;
-    delete condition;
-    condition = condition_node->evaluate(VM::EvaluatorModifier::EM_None);
-}
-
 common::elements::Element *NodeWhile::evaluate(uint8_t modifier) {
-    common::elements::Element *condition = this->condition->evaluate(VM::EvaluatorModifier::EM_None);
-    condition->checkAndConvert(common::bytecodes::ApicaTypeBytecode::Bool);
-    if (condition->isErrorOrController())
-        return condition;
+    common::elements::Element *while_condition = this->condition->evaluate(VM::EvaluatorModifier::EM_CopyCall);
+    while_condition->checkAndConvert(common::bytecodes::ApicaTypeBytecode::Bool);
+    if (while_condition->isErrorOrController())
+        return while_condition;
 
-    common::values::ValueBool *result = static_cast<common::values::ValueBool*>(condition->getValue());
+    common::values::ValueBool *result = static_cast<common::values::ValueBool*>(while_condition->getValue());
     while (VM::VMEvaluator::getInstance().isRunning() && result->getValue().value()) {
         common::elements::Element *body_result = this->body->evaluate(modifier);
+
         if (body_result->isErrorOrController()) {
-            if (body_result->getModifier() & common::elements::ElementModifier::Break) {
-                delete condition;
+            uint8_t body_modifier = body_result->getModifier();
+            if (body_modifier & common::elements::ElementModifier::Break) {
+                delete while_condition;
                 delete body_result;
                 break;
-            } else if (body_result->getModifier() & common::elements::ElementModifier::Continue) {
-                recalculateCondition(condition, body_result, this->condition);
-                condition->checkAndConvert(common::bytecodes::ApicaTypeBytecode::Bool);
-                if (condition->isErrorOrController())
-                    return condition;
+            }
+            
+            if (body_modifier & common::elements::ElementModifier::Continue) {
+                delete body_result;
+                delete while_condition;
+                
+                while_condition = this->condition->evaluate(VM::EvaluatorModifier::EM_None);
+                while_condition->checkAndConvert(common::bytecodes::ApicaTypeBytecode::Bool);
+                
+                if (while_condition->isErrorOrController()) {
+                    return while_condition;
+                }
+                
+                result = static_cast<common::values::ValueBool*>(while_condition->getValue());
                 continue;
             }
 
-            delete condition;
+            delete while_condition;
             return body_result;
         }
 
-        recalculateCondition(condition, body_result, this->condition);
-        condition->checkAndConvert(common::bytecodes::ApicaTypeBytecode::Bool);
-        if (condition->isErrorOrController())
-            return condition;
+
+        delete body_result;
+        delete while_condition;
+
+        while_condition = this->condition->evaluate(VM::EvaluatorModifier::EM_CopyCall);
+        while_condition->checkAndConvert(common::bytecodes::ApicaTypeBytecode::Bool);
+        if (while_condition->isErrorOrController())
+            return while_condition;
+        
+        result = static_cast<common::values::ValueBool*>(while_condition->getValue());
     }
 
+    delete while_condition;
     return new common::elements::Element(
         common::elements::ElementModifier::None,
         new common::values::ValueNull()

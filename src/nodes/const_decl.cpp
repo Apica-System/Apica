@@ -13,10 +13,6 @@ NodeConstDeclaration::~NodeConstDeclaration() {
     if (this->expression) delete this->expression;
 }
 
-NodeKind NodeConstDeclaration::getKind() const {
-    return NodeKind::ConstDeclaration;
-}
-
 common::elements::Element *NodeConstDeclaration::evaluate(uint8_t) {
     common::elements::Element *result = this->expression->evaluate(VM::EvaluatorModifier::EM_CopyCall);
     result->checkAndConvert(this->value_type);
